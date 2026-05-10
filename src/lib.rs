@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod auth;
 pub mod config;
 pub mod db;
@@ -22,6 +23,7 @@ use serde::Deserialize;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
 use crate::{
+    admin::{create_post, new_post_form},
     auth::{
         guard::{AuthenticatedAdmin, require_admin_auth},
         handlers::{login_form, login_submit, logout},
@@ -52,6 +54,8 @@ pub fn app(state: AppState) -> Router {
         .merge(
             Router::new()
                 .route("/", get(admin_home))
+                .route("/posts/new", get(new_post_form))
+                .route("/posts", post(create_post))
                 .route("/logout", post(logout))
                 .route_layer(middleware::from_fn(require_admin_auth)),
         );

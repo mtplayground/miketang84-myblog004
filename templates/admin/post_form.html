@@ -1,0 +1,44 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<section class="panel">
+    <p class="eyebrow">Drafting</p>
+    <h1>Create a new post</h1>
+    <p>Write in Markdown, optionally override the slug, and attach tags as a comma-separated list.</p>
+    {% match error_message %}
+    {% when Some with (message) %}
+    <p class="error">{{ message }}</p>
+    {% when None %}
+    {% endmatch %}
+    <form method="post" action="/admin/posts" class="stack-form">
+        <label for="title">Title</label>
+        <input id="title" name="title" type="text" value="{{ title }}" required>
+
+        <label for="slug">Slug</label>
+        <input id="slug" name="slug" type="text" value="{{ slug }}" placeholder="Optional override">
+
+        <label for="tags_csv">Tags</label>
+        <input
+            id="tags_csv"
+            name="tags_csv"
+            type="text"
+            value="{{ tags_csv }}"
+            placeholder="rust, web, notes"
+        >
+
+        <label for="body_md">Body Markdown</label>
+        <textarea id="body_md" name="body_md" rows="16" required>{{ body_md }}</textarea>
+
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="draft" {% if is_draft %}selected{% endif %}>Draft</option>
+            <option value="published" {% if is_published %}selected{% endif %}>Published</option>
+        </select>
+
+        <div class="form-actions">
+            <button type="submit">Create post</button>
+            <a class="dashboard-action" href="/admin">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
