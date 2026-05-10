@@ -3,6 +3,7 @@ use std::{
     error::Error,
     fmt,
     net::{AddrParseError, SocketAddr},
+    num::ParseIntError,
 };
 
 use url::{ParseError as UrlParseError, Url};
@@ -14,6 +15,7 @@ pub struct Config {
     pub base_url: Url,
     pub session_secret: String,
     pub title: String,
+    pub rss_limit: usize,
     pub admin_username: String,
     pub admin_password: String,
 }
@@ -26,6 +28,7 @@ impl Config {
             base_url: read_required_url("BLOG_BASE_URL")?,
             session_secret: read_min_length_string("BLOG_SESSION_SECRET", 32)?,
             title: read_required_string("BLOG_TITLE")?,
+            rss_limit: read_usize_with_default("BLOG_RSS_LIMIT", 20)?,
             admin_username: read_required_string("ADMIN_USERNAME")?,
             admin_password: read_required_string("ADMIN_PASSWORD")?,
         })
@@ -49,6 +52,11 @@ pub enum ConfigError {
         value: String,
         source: UrlParseError,
     },
+    InvalidUsize {
+        name: &'static str,
+        value: String,
+        source: ParseIntError,
+    },
 }
 
 impl fmt::Display for ConfigError {
@@ -69,6 +77,9 @@ impl fmt::Display for ConfigError {
             } => {
                 write!(f, "invalid {name} value `{value}`: {source}")
             }
+            Self::InvalidUsize { name, value, source } => {
+                write!(f, "invalid {name} value `{value}`: {source}")
+            }
         }
     }
 }
@@ -78,6 +89,7 @@ impl Error for ConfigError {
         match self {
             Self::InvalidBindAddr { source, .. } => Some(source),
             Self::InvalidUrl { source, .. } => Some(source),
+            Self::InvalidUsize { source, .. } => Some(source),
             Self::MissingVar(_) | Self::EmptyVar(_) | Self::TooShortVar { .. } => None,
         }
     }
@@ -122,4 +134,22 @@ fn read_required_url(name: &'static str) -> Result<Url, ConfigError> {
         value,
         source,
     })
+}
+
+fn read_usize_with_default(name: &'static str, default: usize) -> Result<usize, ConfigError> {
+    match env::var(name) {
+        Ok(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                return Err(ConfigError::EmptyVar(name));
+            }
+
+            trimmed.parse::<usize>().map_err(|source| ConfigError::InvalidUsize {
+                name,
+                value,
+                source,
+            })
+        }
+        Err(_) => Ok(default),
+    }
 }
