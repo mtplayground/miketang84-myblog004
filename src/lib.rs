@@ -23,7 +23,10 @@ use serde::Deserialize;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
 use crate::{
-    admin::{create_post, edit_post_form, new_post_form, publish_post, unpublish_post, update_post},
+    admin::{
+        create_post, delete_post, delete_post_confirm, edit_post_form, new_post_form,
+        publish_post, unpublish_post, update_post,
+    },
     auth::{
         guard::{AuthenticatedAdmin, require_admin_auth},
         handlers::{login_form, login_submit, logout},
@@ -60,6 +63,7 @@ pub fn app(state: AppState) -> Router {
                 .route("/posts/{id}", post(update_post))
                 .route("/posts/{id}/publish", post(publish_post))
                 .route("/posts/{id}/unpublish", post(unpublish_post))
+                .route("/posts/{id}/delete", get(delete_post_confirm).post(delete_post))
                 .route("/logout", post(logout))
                 .route_layer(middleware::from_fn(require_admin_auth)),
         );
@@ -255,7 +259,7 @@ async fn admin_home(
                 } else {
                     String::from("Publish")
                 },
-                delete_url: format!("/admin/posts/{}/delete", post.slug),
+                delete_url: format!("/admin/posts/{}/delete", post.id),
             }
         })
         .collect();

@@ -153,6 +153,16 @@ impl AdminPostFormTemplate {
     }
 }
 
+#[derive(Template)]
+#[template(path = "admin/delete_confirm.html")]
+pub struct AdminDeleteConfirmTemplate {
+    pub blog_title: String,
+    pub page_title: String,
+    pub post_title: String,
+    pub post_slug: String,
+    pub form_action: String,
+}
+
 pub fn render_template_response<T>(status: StatusCode, template: T) -> Response
 where
     T: Template,
