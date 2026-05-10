@@ -95,7 +95,7 @@ async fn login_success_sets_session_and_allows_guarded_route() -> Result<(), Box
         published_at: Some(chrono::Utc::now()),
     })
     .await?;
-    repo.insert(&NewPost {
+    let draft_post = repo.insert(&NewPost {
         id: Uuid::new_v4(),
         slug: String::from("draft-post"),
         title: String::from("Draft Post"),
@@ -156,8 +156,8 @@ async fn login_success_sets_session_and_allows_guarded_route() -> Result<(), Box
     assert!(guarded_body.contains("Published"));
     assert!(guarded_body.contains("Draft"));
     assert!(guarded_body.contains(&format!("/admin/posts/{}/edit", published_post.id)));
-    assert!(guarded_body.contains("/admin/posts/published-post/unpublish"));
-    assert!(guarded_body.contains("/admin/posts/draft-post/publish"));
+    assert!(guarded_body.contains(&format!("action=\"/admin/posts/{}/unpublish\"", published_post.id)));
+    assert!(guarded_body.contains(&format!("action=\"/admin/posts/{}/publish\"", draft_post.id)));
     assert!(guarded_body.contains("/admin/posts/draft-post/delete"));
 
     common::reset_database(&pool).await?;

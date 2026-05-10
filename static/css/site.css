@@ -324,6 +324,10 @@ button:hover {
     margin-top: 1rem;
 }
 
+.dashboard-form {
+    margin: 0;
+}
+
 .form-actions {
     display: flex;
     gap: 0.75rem;
@@ -341,6 +345,16 @@ button:hover {
     background: var(--surface-strong);
     color: var(--accent-strong);
     text-decoration: none;
+}
+
+.dashboard-action--button {
+    width: auto;
+    background: var(--surface-strong);
+    cursor: pointer;
+}
+
+.dashboard-action--button:hover {
+    background: #e7dcc8;
 }
 
 .dashboard-action--danger {
