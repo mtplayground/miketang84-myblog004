@@ -2,7 +2,7 @@
 
 ## What this project is
 
-`myblog004` is a PostgreSQL-backed, server-rendered blog application written in Rust. It exposes a public blog site plus a password-protected admin interface for managing posts.
+`myblog004` is a PostgreSQL-backed, server-rendered blog application written in Rust. It exposes a public reading experience plus a password-protected admin area for managing posts.
 
 ## What it does today
 
@@ -34,6 +34,7 @@ Post state is explicit: posts are either `draft` or `published`.
 - `tower-sessions` signed cookie sessions for admin auth
 - Markdown is rendered and sanitized on write, then stored as HTML for cheap reads
 - App startup order is: load env config, connect DB, ping DB, run migrations, seed admin, start server
+- Runtime content and static asset paths are resolved from the app root so the binary can run outside the repo cwd
 
 ## Product conventions
 
@@ -42,12 +43,15 @@ Post state is explicit: posts are either `draft` or `published`.
 - Canonical URLs, sitemap entries, and RSS links come from `BLOG_BASE_URL`
 - Static assets are served from `/static`
 - Friendly HTML 404 and generic 500 pages are part of the product contract
+- Request tracing logs successful HTTP responses at `INFO` and failures at error level
 
 ## Operational expectations
 
 - Required configuration lives in `BLOG_*` and `ADMIN_*` env vars
+- The app accepts `BLOG_DATABASE_URL` and falls back to `DATABASE_URL` when needed for hosted deployments
 - The app listens on `0.0.0.0:8080` unless `BLOG_BIND_ADDR` overrides it
 - Backups are expected to be handled with PostgreSQL-native tooling such as `pg_dump`
+- `scripts/redeploy_sprite.sh` is the checked-in path for rebuilding and re-syncing the Sprite deployment
 
 ## Test coverage shape
 
