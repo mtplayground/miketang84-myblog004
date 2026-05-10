@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO post_tags (post_id, tag_id)\n                SELECT $1, input.tag_id\n                FROM UNNEST($2::uuid[]) AS input(tag_id)\n                ON CONFLICT (post_id, tag_id) DO NOTHING\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "160ca017d910f5c7bb53c69bedbe34337ec82aade61bf75dfa2a09358ffb3169"
+}
