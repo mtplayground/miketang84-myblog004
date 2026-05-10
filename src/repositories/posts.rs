@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use sqlx::PgPool;
+use sqlx::{Executor, PgPool, Postgres};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,6 +64,17 @@ impl PostRepo {
     }
 
     pub async fn list_published(&self, page: i64, per_page: i64) -> Result<Vec<Post>, sqlx::Error> {
+        Self::list_published_with(&self.pool, page, per_page).await
+    }
+
+    pub async fn list_published_with<'e, E>(
+        executor: E,
+        page: i64,
+        per_page: i64,
+    ) -> Result<Vec<Post>, sqlx::Error>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         let page = page.max(1);
         let per_page = per_page.max(1);
         let offset = (page - 1) * per_page;
@@ -90,11 +101,18 @@ impl PostRepo {
             per_page,
             offset
         )
-        .fetch_all(&self.pool)
+        .fetch_all(executor)
         .await
     }
 
     pub async fn list_all_admin(&self) -> Result<Vec<Post>, sqlx::Error> {
+        Self::list_all_admin_with(&self.pool).await
+    }
+
+    pub async fn list_all_admin_with<'e, E>(executor: E) -> Result<Vec<Post>, sqlx::Error>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         sqlx::query_as!(
             Post,
             r#"
@@ -113,11 +131,21 @@ impl PostRepo {
             ORDER BY updated_at DESC, created_at DESC
             "#
         )
-        .fetch_all(&self.pool)
+        .fetch_all(executor)
         .await
     }
 
     pub async fn find_by_slug(&self, slug: &str) -> Result<Option<Post>, sqlx::Error> {
+        Self::find_by_slug_with(&self.pool, slug).await
+    }
+
+    pub async fn find_by_slug_with<'e, E>(
+        executor: E,
+        slug: &str,
+    ) -> Result<Option<Post>, sqlx::Error>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         sqlx::query_as!(
             Post,
             r#"
@@ -137,11 +165,18 @@ impl PostRepo {
             "#,
             slug
         )
-        .fetch_optional(&self.pool)
+        .fetch_optional(executor)
         .await
     }
 
     pub async fn insert(&self, post: &NewPost) -> Result<Post, sqlx::Error> {
+        Self::insert_with(&self.pool, post).await
+    }
+
+    pub async fn insert_with<'e, E>(executor: E, post: &NewPost) -> Result<Post, sqlx::Error>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         sqlx::query_as!(
             Post,
             r#"
@@ -177,11 +212,18 @@ impl PostRepo {
             post.status.as_str(),
             post.published_at
         )
-        .fetch_one(&self.pool)
+        .fetch_one(executor)
         .await
     }
 
     pub async fn update(&self, post: &UpdatePost) -> Result<Post, sqlx::Error> {
+        Self::update_with(&self.pool, post).await
+    }
+
+    pub async fn update_with<'e, E>(executor: E, post: &UpdatePost) -> Result<Post, sqlx::Error>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         sqlx::query_as!(
             Post,
             r#"
@@ -213,11 +255,18 @@ impl PostRepo {
             post.body_html,
             post.excerpt
         )
-        .fetch_one(&self.pool)
+        .fetch_one(executor)
         .await
     }
 
     pub async fn delete(&self, id: Uuid) -> Result<(), sqlx::Error> {
+        Self::delete_with(&self.pool, id).await
+    }
+
+    pub async fn delete_with<'e, E>(executor: E, id: Uuid) -> Result<(), sqlx::Error>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         sqlx::query!(
             r#"
             DELETE FROM posts
@@ -225,7 +274,7 @@ impl PostRepo {
             "#,
             id
         )
-        .execute(&self.pool)
+        .execute(executor)
         .await
         .map(|_| ())
     }
@@ -236,6 +285,18 @@ impl PostRepo {
         status: PostStatus,
         published_at: Option<DateTime<Utc>>,
     ) -> Result<Post, sqlx::Error> {
+        Self::set_status_with(&self.pool, id, status, published_at).await
+    }
+
+    pub async fn set_status_with<'e, E>(
+        executor: E,
+        id: Uuid,
+        status: PostStatus,
+        published_at: Option<DateTime<Utc>>,
+    ) -> Result<Post, sqlx::Error>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         sqlx::query_as!(
             Post,
             r#"
@@ -261,7 +322,7 @@ impl PostRepo {
             status.as_str(),
             published_at
         )
-        .fetch_one(&self.pool)
+        .fetch_one(executor)
         .await
     }
 }
