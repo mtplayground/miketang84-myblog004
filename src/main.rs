@@ -13,6 +13,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config = Config::from_env()?;
     let db_pool = db::connect(&config.database_url).await?;
     db::ping(&db_pool).await?;
+    db::run_migrations(&db_pool).await?;
     let bind_addr = config.bind_addr;
     let listener = TcpListener::bind(bind_addr).await?;
 

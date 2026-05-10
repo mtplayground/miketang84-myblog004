@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 axum = "0.8"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
-sqlx = { version = "0.8", features = ["postgres", "macros", "runtime-tokio", "chrono", "uuid", "tls-rustls-ring"] }
+sqlx = { version = "0.8", features = ["postgres", "macros", "migrate", "runtime-tokio", "chrono", "uuid", "tls-rustls-ring"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace"] }

@@ -1,10 +1,13 @@
 use std::str::FromStr;
 
 use sqlx::{
+    migrate::Migrator,
     PgPool,
     postgres::{PgConnectOptions, PgPoolOptions, PgSslMode},
 };
 use url::Url;
+
+static MIGRATOR: Migrator = sqlx::migrate!();
 
 pub async fn connect(database_url: &str) -> Result<PgPool, sqlx::Error> {
     match connect_with_url(database_url).await {
@@ -24,6 +27,10 @@ pub async fn ping(pool: &PgPool) -> Result<(), sqlx::Error> {
         .fetch_one(pool)
         .await
         .map(|_| ())
+}
+
+pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::migrate::MigrateError> {
+    MIGRATOR.run(pool).await
 }
 
 async fn connect_with_url(database_url: &str) -> Result<PgPool, sqlx::Error> {
