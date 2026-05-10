@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block head %}
+<meta name="description" content="{{ seo_description }}">
+<link rel="canonical" href="{{ canonical_url }}">
+<meta property="og:title" content="{{ title }}">
+<meta property="og:description" content="{{ seo_description }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ canonical_url }}">
+{% endblock %}
+
+{% block content %}
+<article class="post-detail">
+    <header class="hero-card">
+        <p class="eyebrow">Published {{ published_on }}</p>
+        <h1>{{ title }}</h1>
+        {% if tags.len() > 0 %}
+        <div class="tag-row" aria-label="Tags">
+            {% for tag in tags %}
+            <a class="tag-chip" href="/tags/{{ tag.slug }}">{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </header>
+
+    <section class="panel prose">
+        {{ body_html|safe }}
+    </section>
+</article>
+{% endblock %}

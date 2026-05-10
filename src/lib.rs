@@ -11,7 +11,7 @@ pub mod templates;
 
 use axum::middleware;
 use axum::{
-    extract::Query,
+    extract::{Path, Query},
     Router,
     extract::State,
     routing::{get, post},
@@ -29,7 +29,10 @@ use crate::{
     repositories::{posts::PostRepo, tags::TagRepo},
     session::session_layer,
     state::AppState,
-    templates::{AdminDashboardTemplate, HomePostTemplate, HomeTagChip, HomeTemplate, HtmlTemplate},
+    templates::{
+        AdminDashboardTemplate, HomePostTemplate, HomeTemplate, HtmlTemplate, PostDetailTemplate,
+        TagChipTemplate,
+    },
 };
 
 const HOME_PAGE_SIZE: i64 = 10;
@@ -52,6 +55,7 @@ pub fn app(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(healthcheck))
+        .route("/posts/{slug}", get(post_detail))
         .nest("/admin", admin_routes)
         .nest_service("/static", ServeDir::new("static"))
         .fallback(not_found)
@@ -79,12 +83,13 @@ async fn healthcheck(
             .map_err(|_| AppError::internal())?;
 
         home_posts.push(HomePostTemplate {
+            slug: post.slug,
             title: post.title,
             published_on: display_timestamp(post.published_at.unwrap_or(post.created_at)),
             excerpt: post.excerpt,
             tags: tags
                 .into_iter()
-                .map(|tag| HomeTagChip {
+                .map(|tag| TagChipTemplate {
                     name: tag.name,
                     slug: tag.slug,
                 })
@@ -105,6 +110,50 @@ async fn healthcheck(
         current_page,
         previous_page: (current_page > 1).then_some(current_page - 1),
         next_page,
+    }))
+}
+
+async fn post_detail(
+    State(state): State<AppState>,
+    Path(slug): Path<String>,
+) -> AppResult<HtmlTemplate<PostDetailTemplate>> {
+    let post = PostRepo::new(state.db_pool.clone())
+        .find_by_slug(&slug)
+        .await
+        .map_err(|_| AppError::internal())?;
+    let Some(post) = post else {
+        return Err(AppError::not_found());
+    };
+
+    if post.status != "published" {
+        return Err(AppError::not_found());
+    }
+
+    let tags = TagRepo::new(state.db_pool.clone())
+        .list_for_post(post.id)
+        .await
+        .map_err(|_| AppError::internal())?;
+    let canonical_url = state
+        .config
+        .base_url
+        .join(&format!("posts/{}", post.slug))
+        .map_err(|_| AppError::internal())?;
+
+    Ok(HtmlTemplate(PostDetailTemplate {
+        blog_title: state.config.title.clone(),
+        page_title: post.title.clone(),
+        seo_description: post.excerpt.clone(),
+        canonical_url: canonical_url.to_string(),
+        title: post.title,
+        published_on: display_timestamp(post.published_at.unwrap_or(post.created_at)),
+        body_html: post.body_html,
+        tags: tags
+            .into_iter()
+            .map(|tag| TagChipTemplate {
+                name: tag.name,
+                slug: tag.slug,
+            })
+            .collect(),
     }))
 }
 

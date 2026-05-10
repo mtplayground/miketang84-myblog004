@@ -37,16 +37,30 @@ pub struct HomeTemplate {
 
 #[derive(Clone, Debug)]
 pub struct HomePostTemplate {
+    pub slug: String,
     pub title: String,
     pub published_on: String,
     pub excerpt: String,
-    pub tags: Vec<HomeTagChip>,
+    pub tags: Vec<TagChipTemplate>,
 }
 
 #[derive(Clone, Debug)]
-pub struct HomeTagChip {
+pub struct TagChipTemplate {
     pub name: String,
     pub slug: String,
+}
+
+#[derive(Template)]
+#[template(path = "post_detail.html")]
+pub struct PostDetailTemplate {
+    pub blog_title: String,
+    pub page_title: String,
+    pub seo_description: String,
+    pub canonical_url: String,
+    pub title: String,
+    pub published_on: String,
+    pub body_html: String,
+    pub tags: Vec<TagChipTemplate>,
 }
 
 #[derive(Template)]
