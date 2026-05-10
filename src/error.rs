@@ -1,3 +1,4 @@
+use askama::Template;
 use axum::{
     http::{StatusCode, header},
     response::{Html, IntoResponse, Response},
@@ -10,6 +11,7 @@ pub struct AppError {
     status: StatusCode,
     title: &'static str,
     message: &'static str,
+    detail: &'static str,
 }
 
 impl AppError {
@@ -17,7 +19,8 @@ impl AppError {
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             title: "Internal Server Error",
-            message: "The server could not complete this request.",
+            message: "Something went wrong on our side.",
+            detail: "Please try again in a moment. If the problem keeps happening, return to the home page and retry from there.",
         }
     }
 
@@ -25,35 +28,23 @@ impl AppError {
         Self {
             status: StatusCode::NOT_FOUND,
             title: "Page Not Found",
-            message: "The page you requested could not be found.",
+            message: "We couldn't find the page, post, or tag you requested.",
+            detail: "The link may be outdated, the content may have been removed, or the address may have been mistyped.",
         }
     }
 
     fn render_html(&self) -> String {
-        let title = escape_html(self.title);
-        let message = escape_html(self.message);
+        let template = ErrorPageTemplate {
+            status_code: self.status.as_u16(),
+            title: self.title,
+            message: self.message,
+            detail: self.detail,
+        };
 
-        format!(
-            concat!(
-                "<!DOCTYPE html>",
-                "<html lang=\"en\">",
-                "<head>",
-                "<meta charset=\"utf-8\">",
-                "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
-                "<title>{title}</title>",
-                "<link rel=\"stylesheet\" href=\"/static/css/site.css\">",
-                "</head>",
-                "<body>",
-                "<main>",
-                "<h1>{title}</h1>",
-                "<p>{message}</p>",
-                "</main>",
-                "</body>",
-                "</html>"
-            ),
-            title = title,
-            message = message,
-        )
+        match template.render() {
+            Ok(rendered) => rendered,
+            Err(_) => render_fallback_html(self),
+        }
     }
 }
 
@@ -70,19 +61,44 @@ impl IntoResponse for AppError {
     }
 }
 
-fn escape_html(input: &str) -> String {
-    let mut escaped = String::with_capacity(input.len());
+#[derive(Template)]
+#[template(path = "error.html")]
+struct ErrorPageTemplate {
+    status_code: u16,
+    title: &'static str,
+    message: &'static str,
+    detail: &'static str,
+}
 
-    for ch in input.chars() {
-        match ch {
-            '&' => escaped.push_str("&amp;"),
-            '<' => escaped.push_str("&lt;"),
-            '>' => escaped.push_str("&gt;"),
-            '"' => escaped.push_str("&quot;"),
-            '\'' => escaped.push_str("&#39;"),
-            _ => escaped.push(ch),
-        }
-    }
-
-    escaped
+fn render_fallback_html(error: &AppError) -> String {
+    format!(
+        concat!(
+            "<!DOCTYPE html>",
+            "<html lang=\"en\">",
+            "<head>",
+            "<meta charset=\"utf-8\">",
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+            "<title>{title}</title>",
+            "<link rel=\"stylesheet\" href=\"/static/css/site.css\">",
+            "</head>",
+            "<body class=\"site-shell\">",
+            "<main class=\"site-main\">",
+            "<section class=\"hero-card\">",
+            "<p class=\"eyebrow\">Error {status_code}</p>",
+            "<h1>{title}</h1>",
+            "<p>{message}</p>",
+            "</section>",
+            "<section class=\"panel\">",
+            "<p>{detail}</p>",
+            "<p><a href=\"/\">Back home</a></p>",
+            "</section>",
+            "</main>",
+            "</body>",
+            "</html>"
+        ),
+        status_code = error.status.as_u16(),
+        title = error.title,
+        message = error.message,
+        detail = error.detail,
+    )
 }

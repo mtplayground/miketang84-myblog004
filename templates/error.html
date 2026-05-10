@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ message }}">
+    <link rel="stylesheet" href="/static/css/site.css">
+</head>
+<body class="site-shell">
+    <header class="site-header">
+        <div class="site-header__inner">
+            <a class="site-brand" href="/">Blog</a>
+            <nav class="site-nav" aria-label="Primary">
+                <a href="/">Home</a>
+                <a href="/about">About</a>
+            </nav>
+        </div>
+    </header>
+    <main class="site-main">
+        <section class="hero-card">
+            <p class="eyebrow">Error {{ status_code }}</p>
+            <h1>{{ title }}</h1>
+            <p>{{ message }}</p>
+        </section>
+
+        <section class="panel">
+            <p>{{ detail }}</p>
+            <div class="form-actions">
+                <a class="dashboard-action" href="/">Back home</a>
+                <a class="dashboard-action" href="/about">About this site</a>
+            </div>
+        </section>
+    </main>
+    <footer class="site-footer">
+        <div class="site-footer__inner">
+            <p>Try another page, or return to the main blog feed.</p>
+        </div>
+    </footer>
+</body>
+</html>
