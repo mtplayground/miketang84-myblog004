@@ -73,6 +73,15 @@ pub struct TagListingTemplate {
 }
 
 #[derive(Template)]
+#[template(path = "static_page.html")]
+pub struct StaticPageTemplate {
+    pub blog_title: String,
+    pub page_title: String,
+    pub title: String,
+    pub body_html: String,
+}
+
+#[derive(Template)]
 #[template(path = "admin/login.html")]
 pub struct AdminLoginTemplate {
     pub blog_title: String,
