@@ -1,4 +1,5 @@
 pub mod config;
+pub mod db;
 pub mod state;
 
 use axum::{Router, extract::State, routing::get};

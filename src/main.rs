@@ -4,13 +4,15 @@ use tokio::net::TcpListener;
 use tracing::info;
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-use myblog004::{config::Config, state::AppState};
+use myblog004::{config::Config, db, state::AppState};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     init_tracing();
 
     let config = Config::from_env()?;
+    let db_pool = db::connect(&config.database_url).await?;
+    db::ping(&db_pool).await?;
     let bind_addr = config.bind_addr;
     let listener = TcpListener::bind(bind_addr).await?;
 
@@ -21,7 +23,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "listening"
     );
 
-    axum::serve(listener, myblog004::app(AppState::new(config))).await?;
+    axum::serve(listener, myblog004::app(AppState::new(config, db_pool))).await?;
 
     Ok(())
 }
