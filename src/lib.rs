@@ -14,6 +14,8 @@ pub mod templates;
 use axum::middleware;
 use axum::{
     extract::{Path, Query},
+    http::header,
+    response::IntoResponse,
     Router,
     extract::State,
     routing::{get, post},
@@ -73,6 +75,7 @@ pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/", get(healthcheck))
         .route("/about", get(about_page))
+        .route("/robots.txt", get(robots_txt))
         .route("/posts/{slug}", get(post_detail))
         .route("/tags/{tag}", get(tag_listing))
         .nest("/admin", admin_routes)
@@ -312,6 +315,19 @@ async fn about_page(State(state): State<AppState>) -> AppResult<HtmlTemplate<Sta
         title: String::from("About"),
         body_html,
     }))
+}
+
+async fn robots_txt(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let sitemap_url = state
+        .config
+        .base_url
+        .join("sitemap.xml")
+        .map_err(|_| AppError::internal())?;
+    let body = format!(
+        "User-agent: *\nAllow: /\nDisallow: /admin/\n\nSitemap: {sitemap_url}\n"
+    );
+
+    Ok(([(header::CONTENT_TYPE, "text/plain; charset=utf-8")], body))
 }
 
 async fn not_found() -> AppError {
