@@ -113,6 +113,15 @@ a {
     margin: 0.35rem 0 0.75rem;
 }
 
+.post-link {
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.post-link:hover {
+    color: var(--accent);
+}
+
 .post-card p {
     margin: 0;
     color: var(--muted);
@@ -164,6 +173,41 @@ a {
 
 .pager-current {
     color: var(--muted);
+}
+
+.post-detail {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.prose > :first-child {
+    margin-top: 0;
+}
+
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose pre,
+.prose table {
+    margin: 1rem 0;
+}
+
+.prose img {
+    max-width: 100%;
+    border-radius: 1rem;
+}
+
+.prose pre {
+    overflow-x: auto;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: #1f2933;
+    color: #f8fafc;
+}
+
+.prose code {
+    font-family: "SFMono-Regular", "Consolas", monospace;
 }
 
 .eyebrow {
