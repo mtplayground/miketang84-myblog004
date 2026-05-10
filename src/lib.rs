@@ -11,10 +11,13 @@ pub mod templates;
 
 use axum::middleware;
 use axum::{
+    extract::Query,
     Router,
     extract::State,
     routing::{get, post},
 };
+use chrono::{DateTime, Utc};
+use serde::Deserialize;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
 use crate::{
@@ -23,10 +26,18 @@ use crate::{
         handlers::{login_form, login_submit, logout},
     },
     error::{AppError, AppResult},
+    repositories::{posts::PostRepo, tags::TagRepo},
     session::session_layer,
     state::AppState,
-    templates::{AdminDashboardTemplate, HomeTemplate, HtmlTemplate},
+    templates::{AdminDashboardTemplate, HomePostTemplate, HomeTagChip, HomeTemplate, HtmlTemplate},
 };
+
+const HOME_PAGE_SIZE: i64 = 10;
+
+#[derive(Debug, Deserialize)]
+struct HomePageParams {
+    page: Option<i64>,
+}
 
 pub fn app(state: AppState) -> Router {
     let session_layer = session_layer(&state.config.session_secret);
@@ -49,12 +60,51 @@ pub fn app(state: AppState) -> Router {
         .layer(TraceLayer::new_for_http())
 }
 
-async fn healthcheck(State(state): State<AppState>) -> AppResult<HtmlTemplate<HomeTemplate>> {
+async fn healthcheck(
+    State(state): State<AppState>,
+    Query(params): Query<HomePageParams>,
+) -> AppResult<HtmlTemplate<HomeTemplate>> {
+    let current_page = params.page.unwrap_or(1).max(1);
+    let posts = PostRepo::new(state.db_pool.clone())
+        .list_published(current_page, HOME_PAGE_SIZE)
+        .await
+        .map_err(|_| AppError::internal())?;
+    let tag_repo = TagRepo::new(state.db_pool.clone());
+    let mut home_posts = Vec::with_capacity(posts.len());
+
+    for post in posts {
+        let tags = tag_repo
+            .list_for_post(post.id)
+            .await
+            .map_err(|_| AppError::internal())?;
+
+        home_posts.push(HomePostTemplate {
+            title: post.title,
+            published_on: display_timestamp(post.published_at.unwrap_or(post.created_at)),
+            excerpt: post.excerpt,
+            tags: tags
+                .into_iter()
+                .map(|tag| HomeTagChip {
+                    name: tag.name,
+                    slug: tag.slug,
+                })
+                .collect(),
+        });
+    }
+
+    let next_page = if home_posts.len() as i64 == HOME_PAGE_SIZE {
+        Some(current_page + 1)
+    } else {
+        None
+    };
+
     Ok(HtmlTemplate(HomeTemplate {
         blog_title: state.config.title.clone(),
         page_title: String::from("Home"),
-        heading: state.config.title.clone(),
-        message: String::from("The blog server is running and ready for content."),
+        posts: home_posts,
+        current_page,
+        previous_page: (current_page > 1).then_some(current_page - 1),
+        next_page,
     }))
 }
 
@@ -71,4 +121,8 @@ async fn admin_home(
 
 async fn not_found() -> AppError {
     AppError::not_found()
+}
+
+fn display_timestamp(timestamp: DateTime<Utc>) -> String {
+    timestamp.format("%b %d, %Y").to_string()
 }

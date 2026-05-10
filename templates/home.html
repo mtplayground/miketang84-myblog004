@@ -2,8 +2,50 @@
 
 {% block content %}
 <section class="hero-card">
-    <p class="eyebrow">System Status</p>
-    <h1>{{ heading }}</h1>
-    <p>{{ message }}</p>
+    <p class="eyebrow">Published Posts</p>
+    <h1>{{ blog_title }}</h1>
+    <p>Recent writing from the public blog feed.</p>
 </section>
+
+{% if posts.len() > 0 %}
+<section class="post-feed">
+    {% for post in posts %}
+    <article class="post-card">
+        <div class="post-card__meta">
+            <time datetime="{{ post.published_on }}">{{ post.published_on }}</time>
+            {% if post.tags.len() > 0 %}
+            <div class="tag-row" aria-label="Tags">
+                {% for tag in post.tags %}
+                <a class="tag-chip" href="/tags/{{ tag.slug }}">{{ tag.name }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <h2>{{ post.title }}</h2>
+        <p>{{ post.excerpt }}</p>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<section class="panel">
+    <p>No published posts yet.</p>
+</section>
+{% endif %}
+
+{% if previous_page.is_some() || next_page.is_some() %}
+<nav class="pager" aria-label="Pagination">
+    {% match previous_page %}
+    {% when Some with (page) %}
+    <a class="pager-link" href="/?page={{ page }}">Newer posts</a>
+    {% when None %}
+    <span></span>
+    {% endmatch %}
+    <span class="pager-current">Page {{ current_page }}</span>
+    {% match next_page %}
+    {% when Some with (page) %}
+    <a class="pager-link" href="/?page={{ page }}">Older posts</a>
+    {% when None %}
+    {% endmatch %}
+</nav>
+{% endif %}
 {% endblock %}
