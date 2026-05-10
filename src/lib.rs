@@ -21,6 +21,7 @@ use axum::{
     routing::{get, post},
 };
 use chrono::{DateTime, Utc};
+use rss::{ChannelBuilder, ItemBuilder};
 use serde::Deserialize;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
@@ -77,6 +78,7 @@ pub fn app(state: AppState) -> Router {
         .route("/about", get(about_page))
         .route("/robots.txt", get(robots_txt))
         .route("/sitemap.xml", get(sitemap_xml))
+        .route("/rss.xml", get(rss_xml))
         .route("/posts/{slug}", get(post_detail))
         .route("/tags/{tag}", get(tag_listing))
         .nest("/admin", admin_routes)
@@ -382,6 +384,46 @@ async fn sitemap_xml(State(state): State<AppState>) -> Result<impl IntoResponse,
     body.push_str("</urlset>");
 
     Ok(([(header::CONTENT_TYPE, "application/xml; charset=utf-8")], body))
+}
+
+async fn rss_xml(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let posts = PostRepo::new(state.db_pool.clone())
+        .list_published(1, state.config.rss_limit as i64)
+        .await
+        .map_err(|_| AppError::internal())?;
+    let items = posts
+        .into_iter()
+        .map(|post| {
+            let link = state
+                .config
+                .base_url
+                .join(&format!("posts/{}", post.slug))
+                .map_err(|_| AppError::internal())?;
+            let pub_date = post.published_at.unwrap_or(post.created_at).to_rfc2822();
+
+            Ok::<_, AppError>(
+                ItemBuilder::default()
+                    .title(Some(post.title))
+                    .link(Some(link.to_string()))
+                    .guid(Some(rss::Guid {
+                        value: link.to_string(),
+                        permalink: true,
+                    }))
+                    .pub_date(Some(pub_date))
+                    .description(Some(post.excerpt))
+                    .content(Some(post.body_html))
+                    .build(),
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let channel = ChannelBuilder::default()
+        .title(state.config.title.clone())
+        .link(state.config.base_url.to_string())
+        .description(format!("Latest posts from {}.", state.config.title))
+        .items(items)
+        .build();
+
+    Ok(([(header::CONTENT_TYPE, "application/rss+xml; charset=utf-8")], channel.to_string()))
 }
 
 async fn not_found() -> AppError {

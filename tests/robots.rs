@@ -19,6 +19,7 @@ fn test_config() -> Config {
         base_url: Url::parse("http://localhost:8080/").expect("static url parses"),
         session_secret: String::from("0123456789abcdef0123456789abcdef"),
         title: String::from("Test Blog"),
+        rss_limit: 20,
         admin_username: String::from("admin"),
         admin_password: String::from("password"),
     }

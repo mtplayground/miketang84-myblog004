@@ -11,6 +11,7 @@ axum = "0.8"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 deunicode = "1"
 pulldown-cmark = "0.13"
+rss = "2"
 serde = { version = "1", features = ["derive"] }
 sqlx = { version = "0.8", features = ["postgres", "macros", "migrate", "runtime-tokio", "chrono", "uuid", "tls-rustls-ring"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
