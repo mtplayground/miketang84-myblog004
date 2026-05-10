@@ -10,7 +10,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 serde = { version = "1", features = ["derive"] }
 sqlx = { version = "0.8", features = ["postgres", "macros", "migrate", "runtime-tokio", "chrono", "uuid", "tls-rustls-ring"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
-tower = "0.5"
+tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["fs", "trace"] }
 tower-sessions-cookie-store = { version = "0.5", features = ["key-expansion"] }
 tracing = "0.1"
