@@ -78,7 +78,7 @@ async fn post_detail_page_renders_published_post_with_tags_and_seo() -> Result<(
     assert!(body.contains("Published excerpt"));
     assert!(body.contains("/tags/rust"));
     assert!(body.contains("meta name=\"description\" content=\"Published excerpt\""));
-    assert!(body.contains("property=\"og:title\" content=\"Published Post\""));
+    assert!(body.contains("property=\"og:title\" content=\"Published Post | Test Blog\""));
 
     common::reset_database(&pool).await?;
     Ok(())

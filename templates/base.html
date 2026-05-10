@@ -3,8 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}{{ page_title }} | {{ blog_title }}{% endblock %}</title>
-    {% block head %}{% endblock %}
+    <title>{{ seo.title }}</title>
+    <meta name="description" content="{{ seo.description }}">
+    <link rel="canonical" href="{{ seo.canonical_url }}">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:type" content="{{ seo.og_type }}">
+    <meta property="og:url" content="{{ seo.canonical_url }}">
+    <meta property="og:site_name" content="{{ blog_title }}">
     <link rel="stylesheet" href="/static/css/site.css">
 </head>
 <body class="site-shell">
