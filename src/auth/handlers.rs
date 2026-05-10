@@ -8,13 +8,13 @@ use serde::Deserialize;
 use tower_sessions_cookie_store::Session;
 
 use crate::{
+    auth::ADMIN_SESSION_KEY,
     auth::password::verify_password,
     error::AppError,
     repositories::admins::AdminRepo,
     state::AppState,
 };
 
-const ADMIN_SESSION_KEY: &str = "admin_id";
 const DUMMY_PASSWORD_HASH: &str = "$argon2id$v=19$m=131072,t=16,p=2$jqwcGfuQWNjaXRlD6/CTnQ$OMwAFM7qZjXvyFS7Pqq6M1AC5U6oAXNXdidFKBJ7fyc";
 
 #[derive(Deserialize)]
