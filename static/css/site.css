@@ -1,0 +1,26 @@
+:root {
+    color-scheme: light;
+    font-family: "Georgia", "Times New Roman", serif;
+    line-height: 1.5;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #f7f3ec;
+    color: #1f2933;
+}
+
+main {
+    width: min(48rem, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 3rem 0;
+}
+
+a {
+    color: #0f5c73;
+}
