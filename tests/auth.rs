@@ -200,7 +200,9 @@ async fn login_form_renders() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(response.status(), StatusCode::OK);
     let body = String::from_utf8(to_bytes(response.into_body(), usize::MAX).await?.to_vec())?;
-    assert!(body.contains("<form method=\"post\" action=\"/admin/login\">"));
+    assert!(body.contains("<form"));
+    assert!(body.contains("method=\"post\""));
+    assert!(body.contains("action=\"/admin/login\""));
 
     common::reset_database(&pool).await?;
     Ok(())

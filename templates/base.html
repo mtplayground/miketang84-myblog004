@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ page_title }} | {{ blog_title }}{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/site.css">
+</head>
+<body class="site-shell">
+    <header class="site-header">
+        <div class="site-header__inner">
+            <a class="site-brand" href="/">{{ blog_title }}</a>
+            <nav class="site-nav" aria-label="Primary">
+                <a href="/">Home</a>
+                <a href="/about">About</a>
+                <a href="/admin/login">Admin</a>
+            </nav>
+        </div>
+    </header>
+    <main class="site-main">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="site-footer">
+        <div class="site-footer__inner">
+            <p>{{ blog_title }} is built with Rust, Axum, and Askama.</p>
+        </div>
+    </footer>
+</body>
+</html>

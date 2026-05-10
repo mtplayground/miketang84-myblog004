@@ -1,0 +1,18 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<section class="panel">
+    <p class="eyebrow">Dashboard</p>
+    <h1>Authenticated admin session</h1>
+    <p>Your session is active and protected by the admin guard middleware.</p>
+    <dl class="meta-list">
+        <div>
+            <dt>Admin ID</dt>
+            <dd><code>{{ admin_id }}</code></dd>
+        </div>
+    </dl>
+    <form method="post" action="/admin/logout">
+        <button type="submit">Sign out</button>
+    </form>
+</section>
+{% endblock %}

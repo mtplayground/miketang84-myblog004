@@ -6,9 +6,14 @@ pub mod repositories;
 pub mod seed;
 pub mod session;
 pub mod state;
+pub mod templates;
 
-use axum::{Router, extract::State, routing::{get, post}};
 use axum::middleware;
+use axum::{
+    Router,
+    extract::State,
+    routing::{get, post},
+};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
 use crate::{
@@ -19,6 +24,7 @@ use crate::{
     error::{AppError, AppResult},
     session::session_layer,
     state::AppState,
+    templates::{AdminDashboardTemplate, HomeTemplate, HtmlTemplate},
 };
 
 pub fn app(state: AppState) -> Router {
@@ -42,12 +48,24 @@ pub fn app(state: AppState) -> Router {
         .layer(TraceLayer::new_for_http())
 }
 
-async fn healthcheck(State(state): State<AppState>) -> AppResult<String> {
-    Ok(format!("{} is running", state.config.title))
+async fn healthcheck(State(state): State<AppState>) -> AppResult<HtmlTemplate<HomeTemplate>> {
+    Ok(HtmlTemplate(HomeTemplate {
+        blog_title: state.config.title.clone(),
+        page_title: String::from("Home"),
+        heading: state.config.title.clone(),
+        message: String::from("The blog server is running and ready for content."),
+    }))
 }
 
-async fn admin_home(authenticated_admin: AuthenticatedAdmin) -> AppResult<String> {
-    Ok(format!("Authenticated admin {}", authenticated_admin.admin_id))
+async fn admin_home(
+    State(state): State<AppState>,
+    authenticated_admin: AuthenticatedAdmin,
+) -> AppResult<HtmlTemplate<AdminDashboardTemplate>> {
+    Ok(HtmlTemplate(AdminDashboardTemplate {
+        blog_title: state.config.title.clone(),
+        page_title: String::from("Admin Dashboard"),
+        admin_id: authenticated_admin.admin_id.to_string(),
+    }))
 }
 
 async fn not_found() -> AppError {

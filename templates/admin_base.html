@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ page_title }} | {{ blog_title }} Admin{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/site.css">
+</head>
+<body class="admin-shell">
+    <header class="admin-header">
+        <div class="admin-header__inner">
+            <a class="site-brand" href="/admin">{{ blog_title }} Admin</a>
+            <nav class="site-nav" aria-label="Admin">
+                <a href="/">Public Site</a>
+                <a href="/admin">Dashboard</a>
+            </nav>
+        </div>
+    </header>
+    <main class="site-main">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
