@@ -27,7 +27,9 @@
         <p class="dashboard-card__meta">{{ post.published_on }}</p>
         <div class="dashboard-actions">
             <a class="dashboard-action" href="{{ post.edit_url }}">Edit</a>
-            <a class="dashboard-action" href="{{ post.toggle_url }}">{{ post.toggle_label }}</a>
+            <form method="post" action="{{ post.toggle_url }}" class="dashboard-form">
+                <button class="dashboard-action dashboard-action--button" type="submit">{{ post.toggle_label }}</button>
+            </form>
             <a class="dashboard-action dashboard-action--danger" href="{{ post.delete_url }}">Delete</a>
         </div>
     </article>

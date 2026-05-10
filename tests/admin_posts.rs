@@ -316,6 +316,84 @@ async fn update_post_rewrites_content_and_replaces_tags() -> Result<(), Box<dyn 
 }
 
 #[tokio::test]
+async fn publish_post_sets_status_and_timestamp() -> Result<(), Box<dyn std::error::Error>> {
+    let pool = common::test_pool("publish_post_sets_status").await?;
+    seed_admin(&pool, "admin", "password").await?;
+    let post = seed_post(&pool, "draft-note", "Draft Note", "Original body", PostStatus::Draft).await?;
+    let app = app(AppState::new(
+        test_config(String::from("postgresql:///test")),
+        pool.clone(),
+    ));
+    let cookie = login_cookie(app.clone(), "admin", "password").await?;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/admin/posts/{}/publish", post.id))
+                .header(header::COOKIE, cookie)
+                .body(Body::empty())
+                .expect("request builds"),
+        )
+        .await?;
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response.headers().get(header::LOCATION).and_then(|value| value.to_str().ok()),
+        Some("/admin")
+    );
+
+    let updated = PostRepo::new(pool.clone())
+        .find_by_slug("draft-note")
+        .await?
+        .expect("post should still exist");
+    assert_eq!(updated.status, "published");
+    assert!(updated.published_at.is_some());
+
+    common::reset_database(&pool).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn unpublish_post_clears_status_and_timestamp() -> Result<(), Box<dyn std::error::Error>> {
+    let pool = common::test_pool("unpublish_post_clears_status").await?;
+    seed_admin(&pool, "admin", "password").await?;
+    let post = seed_post(&pool, "published-note", "Published Note", "Original body", PostStatus::Published).await?;
+    let app = app(AppState::new(
+        test_config(String::from("postgresql:///test")),
+        pool.clone(),
+    ));
+    let cookie = login_cookie(app.clone(), "admin", "password").await?;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/admin/posts/{}/unpublish", post.id))
+                .header(header::COOKIE, cookie)
+                .body(Body::empty())
+                .expect("request builds"),
+        )
+        .await?;
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response.headers().get(header::LOCATION).and_then(|value| value.to_str().ok()),
+        Some("/admin")
+    );
+
+    let updated = PostRepo::new(pool.clone())
+        .find_by_slug("published-note")
+        .await?
+        .expect("post should still exist");
+    assert_eq!(updated.status, "draft");
+    assert!(updated.published_at.is_none());
+
+    common::reset_database(&pool).await?;
+    Ok(())
+}
+
+#[tokio::test]
 async fn create_post_validation_rerenders_form() -> Result<(), Box<dyn std::error::Error>> {
     let pool = common::test_pool("create_post_validation").await?;
     seed_admin(&pool, "admin", "password").await?;

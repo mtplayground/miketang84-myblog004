@@ -273,6 +273,37 @@ pub async fn update_post(
     Ok(Redirect::to("/admin").into_response())
 }
 
+pub async fn publish_post(
+    State(state): State<AppState>,
+    Path(post_id): Path<String>,
+) -> Result<Response, AppError> {
+    let post_id = parse_post_id(&post_id)?;
+    let post = load_post(&state, post_id).await?;
+    let published_at = post.published_at.or(Some(Utc::now()));
+
+    PostRepo::new(state.db_pool.clone())
+        .set_status(post_id, PostStatus::Published, published_at)
+        .await
+        .map_err(|_| AppError::internal())?;
+
+    Ok(Redirect::to("/admin").into_response())
+}
+
+pub async fn unpublish_post(
+    State(state): State<AppState>,
+    Path(post_id): Path<String>,
+) -> Result<Response, AppError> {
+    let post_id = parse_post_id(&post_id)?;
+    load_post(&state, post_id).await?;
+
+    PostRepo::new(state.db_pool.clone())
+        .set_status(post_id, PostStatus::Draft, None)
+        .await
+        .map_err(|_| AppError::internal())?;
+
+    Ok(Redirect::to("/admin").into_response())
+}
+
 fn create_validation_response(state: &AppState, form: CreatePostFormData, message: &str) -> Response {
     render_template_response(
         StatusCode::UNPROCESSABLE_ENTITY,
