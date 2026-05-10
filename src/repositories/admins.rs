@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use sqlx::{Executor, PgPool, Postgres};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -29,16 +29,6 @@ impl AdminRepo {
     }
 
     pub async fn find_by_username(&self, username: &str) -> Result<Option<Admin>, sqlx::Error> {
-        Self::find_by_username_with(&self.pool, username).await
-    }
-
-    pub async fn find_by_username_with<'e, E>(
-        executor: E,
-        username: &str,
-    ) -> Result<Option<Admin>, sqlx::Error>
-    where
-        E: Executor<'e, Database = Postgres>,
-    {
         sqlx::query_as!(
             Admin,
             r#"
@@ -48,18 +38,11 @@ impl AdminRepo {
             "#,
             username
         )
-        .fetch_optional(executor)
+        .fetch_optional(&self.pool)
         .await
     }
 
     pub async fn insert(&self, admin: &NewAdmin) -> Result<Admin, sqlx::Error> {
-        Self::insert_with(&self.pool, admin).await
-    }
-
-    pub async fn insert_with<'e, E>(executor: E, admin: &NewAdmin) -> Result<Admin, sqlx::Error>
-    where
-        E: Executor<'e, Database = Postgres>,
-    {
         sqlx::query_as!(
             Admin,
             r#"
@@ -71,7 +54,7 @@ impl AdminRepo {
             admin.username,
             admin.password_hash
         )
-        .fetch_one(executor)
+        .fetch_one(&self.pool)
         .await
     }
 
@@ -80,17 +63,6 @@ impl AdminRepo {
         id: Uuid,
         password_hash: &str,
     ) -> Result<Admin, sqlx::Error> {
-        Self::update_password_with(&self.pool, id, password_hash).await
-    }
-
-    pub async fn update_password_with<'e, E>(
-        executor: E,
-        id: Uuid,
-        password_hash: &str,
-    ) -> Result<Admin, sqlx::Error>
-    where
-        E: Executor<'e, Database = Postgres>,
-    {
         sqlx::query_as!(
             Admin,
             r#"
@@ -102,7 +74,7 @@ impl AdminRepo {
             id,
             password_hash
         )
-        .fetch_one(executor)
+        .fetch_one(&self.pool)
         .await
     }
 }

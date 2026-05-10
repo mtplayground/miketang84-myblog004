@@ -1,4 +1,4 @@
-use sqlx::{Executor, PgPool, Postgres, Transaction};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::repositories::posts::Post;
@@ -28,16 +28,6 @@ impl TagRepo {
     }
 
     pub async fn upsert_by_slug(&self, tag: &NewTag) -> Result<Tag, sqlx::Error> {
-        Self::upsert_by_slug_with(&self.pool, tag).await
-    }
-
-    pub async fn upsert_by_slug_with<'e, E>(
-        executor: E,
-        tag: &NewTag,
-    ) -> Result<Tag, sqlx::Error>
-    where
-        E: Executor<'e, Database = Postgres>,
-    {
         sqlx::query_as!(
             Tag,
             r#"
@@ -51,21 +41,11 @@ impl TagRepo {
             tag.slug,
             tag.name
         )
-        .fetch_one(executor)
+        .fetch_one(&self.pool)
         .await
     }
 
     pub async fn list_for_post(&self, post_id: Uuid) -> Result<Vec<Tag>, sqlx::Error> {
-        Self::list_for_post_with(&self.pool, post_id).await
-    }
-
-    pub async fn list_for_post_with<'e, E>(
-        executor: E,
-        post_id: Uuid,
-    ) -> Result<Vec<Tag>, sqlx::Error>
-    where
-        E: Executor<'e, Database = Postgres>,
-    {
         sqlx::query_as!(
             Tag,
             r#"
@@ -77,21 +57,11 @@ impl TagRepo {
             "#,
             post_id
         )
-        .fetch_all(executor)
+        .fetch_all(&self.pool)
         .await
     }
 
     pub async fn posts_by_tag_slug(&self, slug: &str) -> Result<Vec<Post>, sqlx::Error> {
-        Self::posts_by_tag_slug_with(&self.pool, slug).await
-    }
-
-    pub async fn posts_by_tag_slug_with<'e, E>(
-        executor: E,
-        slug: &str,
-    ) -> Result<Vec<Post>, sqlx::Error>
-    where
-        E: Executor<'e, Database = Postgres>,
-    {
         sqlx::query_as!(
             Post,
             r#"
@@ -114,21 +84,12 @@ impl TagRepo {
             "#,
             slug
         )
-        .fetch_all(executor)
+        .fetch_all(&self.pool)
         .await
     }
 
     pub async fn replace_post_tags(&self, post_id: Uuid, tag_ids: &[Uuid]) -> Result<(), sqlx::Error> {
         let mut tx = self.pool.begin().await?;
-        Self::replace_post_tags_with(&mut tx, post_id, tag_ids).await?;
-        tx.commit().await
-    }
-
-    pub async fn replace_post_tags_with(
-        tx: &mut Transaction<'_, Postgres>,
-        post_id: Uuid,
-        tag_ids: &[Uuid],
-    ) -> Result<(), sqlx::Error> {
 
         sqlx::query!(
             r#"
@@ -137,7 +98,7 @@ impl TagRepo {
             "#,
             post_id
         )
-        .execute(tx.as_mut())
+        .execute(&mut *tx)
         .await?;
 
         if !tag_ids.is_empty() {
@@ -151,10 +112,10 @@ impl TagRepo {
                 post_id,
                 tag_ids
             )
-            .execute(tx.as_mut())
+            .execute(&mut *tx)
             .await?;
         }
 
-        Ok(())
+        tx.commit().await
     }
 }
