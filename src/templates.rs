@@ -6,6 +6,14 @@ use axum::{
 
 use crate::error::AppError;
 
+#[derive(Clone, Debug)]
+pub struct SeoMeta {
+    pub title: String,
+    pub description: String,
+    pub canonical_url: String,
+    pub og_type: String,
+}
+
 pub struct HtmlTemplate<T>(pub T);
 
 impl<T> IntoResponse for HtmlTemplate<T>
@@ -29,6 +37,7 @@ where
 pub struct HomeTemplate {
     pub blog_title: String,
     pub page_title: String,
+    pub seo: SeoMeta,
     pub posts: Vec<HomePostTemplate>,
     pub current_page: i64,
     pub previous_page: Option<i64>,
@@ -55,8 +64,7 @@ pub struct TagChipTemplate {
 pub struct PostDetailTemplate {
     pub blog_title: String,
     pub page_title: String,
-    pub seo_description: String,
-    pub canonical_url: String,
+    pub seo: SeoMeta,
     pub title: String,
     pub published_on: String,
     pub body_html: String,
@@ -68,6 +76,7 @@ pub struct PostDetailTemplate {
 pub struct TagListingTemplate {
     pub blog_title: String,
     pub page_title: String,
+    pub seo: SeoMeta,
     pub tag_slug: String,
     pub posts: Vec<HomePostTemplate>,
 }
@@ -77,6 +86,7 @@ pub struct TagListingTemplate {
 pub struct StaticPageTemplate {
     pub blog_title: String,
     pub page_title: String,
+    pub seo: SeoMeta,
     pub title: String,
     pub body_html: String,
 }

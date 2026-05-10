@@ -38,12 +38,14 @@ use crate::{
     state::AppState,
     templates::{
         AdminDashboardPostTemplate, AdminDashboardTemplate, HomePostTemplate, HomeTemplate,
-        HtmlTemplate, PostDetailTemplate, StaticPageTemplate, TagChipTemplate, TagListingTemplate,
+        HtmlTemplate, PostDetailTemplate, SeoMeta, StaticPageTemplate, TagChipTemplate,
+        TagListingTemplate,
     },
 };
 
 const HOME_PAGE_SIZE: i64 = 10;
 const ABOUT_CONTENT_PATH: &str = "content/about.md";
+const SEO_DESCRIPTION_MAX_CHARS: usize = 160;
 
 #[derive(Debug, Deserialize)]
 struct HomePageParams {
@@ -123,6 +125,7 @@ async fn healthcheck(
     Ok(HtmlTemplate(HomeTemplate {
         blog_title: state.config.title.clone(),
         page_title: String::from("Home"),
+        seo: build_home_seo(&state, current_page)?,
         posts: home_posts,
         current_page,
         previous_page: (current_page > 1).then_some(current_page - 1),
@@ -159,8 +162,12 @@ async fn post_detail(
     Ok(HtmlTemplate(PostDetailTemplate {
         blog_title: state.config.title.clone(),
         page_title: post.title.clone(),
-        seo_description: post.excerpt.clone(),
-        canonical_url: canonical_url.to_string(),
+        seo: SeoMeta {
+            title: format!("{} | {}", post.title, state.config.title),
+            description: post.excerpt.clone(),
+            canonical_url: canonical_url.to_string(),
+            og_type: String::from("article"),
+        },
         title: post.title,
         published_on: display_timestamp(post.published_at.unwrap_or(post.created_at)),
         body_html: post.body_html,
@@ -214,6 +221,17 @@ async fn tag_listing(
     Ok(HtmlTemplate(TagListingTemplate {
         blog_title: state.config.title.clone(),
         page_title: format!("Tag: {tag}"),
+        seo: SeoMeta {
+            title: format!("Tag: #{tag} | {}", state.config.title),
+            description: format!("Published posts tagged #{tag} on {}.", state.config.title),
+            canonical_url: state
+                .config
+                .base_url
+                .join(&format!("tags/{tag}"))
+                .map_err(|_| AppError::internal())?
+                .to_string(),
+            og_type: String::from("website"),
+        },
         tag_slug: tag,
         posts: listed_posts,
     }))
@@ -280,6 +298,17 @@ async fn about_page(State(state): State<AppState>) -> AppResult<HtmlTemplate<Sta
     Ok(HtmlTemplate(StaticPageTemplate {
         blog_title: state.config.title.clone(),
         page_title: String::from("About"),
+        seo: SeoMeta {
+            title: format!("About | {}", state.config.title),
+            description: summarize_text(&markdown, SEO_DESCRIPTION_MAX_CHARS),
+            canonical_url: state
+                .config
+                .base_url
+                .join("about")
+                .map_err(|_| AppError::internal())?
+                .to_string(),
+            og_type: String::from("website"),
+        },
         title: String::from("About"),
         body_html,
     }))
@@ -291,4 +320,49 @@ async fn not_found() -> AppError {
 
 fn display_timestamp(timestamp: DateTime<Utc>) -> String {
     timestamp.format("%b %d, %Y").to_string()
+}
+
+fn build_home_seo(state: &AppState, current_page: i64) -> Result<SeoMeta, AppError> {
+    let canonical_url = if current_page <= 1 {
+        state.config.base_url.clone()
+    } else {
+        url::Url::parse(&format!("{}?page={current_page}", state.config.base_url))
+            .map_err(|_| AppError::internal())?
+    };
+    let title = if current_page <= 1 {
+        state.config.title.clone()
+    } else {
+        format!("Page {current_page} | {}", state.config.title)
+    };
+    let description = if current_page <= 1 {
+        format!("Recent published posts from {}.", state.config.title)
+    } else {
+        format!("Published posts page {current_page} from {}.", state.config.title)
+    };
+
+    Ok(SeoMeta {
+        title,
+        description,
+        canonical_url: canonical_url.to_string(),
+        og_type: String::from("website"),
+    })
+}
+
+fn summarize_text(input: &str, max_chars: usize) -> String {
+    let collapsed = input.split_whitespace().collect::<Vec<_>>().join(" ");
+    let mut summary = String::new();
+
+    for ch in collapsed.chars() {
+        if summary.chars().count() >= max_chars {
+            break;
+        }
+
+        summary.push(ch);
+    }
+
+    if collapsed.chars().count() > max_chars {
+        summary.push('…');
+    }
+
+    summary
 }
