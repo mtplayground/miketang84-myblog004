@@ -24,7 +24,7 @@ impl Config {
     pub fn from_env() -> Result<Self, ConfigError> {
         Ok(Self {
             bind_addr: read_bind_addr()?,
-            database_url: read_required_string("BLOG_DATABASE_URL")?,
+            database_url: read_required_string_with_fallback("BLOG_DATABASE_URL", "DATABASE_URL")?,
             base_url: read_required_url("BLOG_BASE_URL")?,
             session_secret: read_min_length_string("BLOG_SESSION_SECRET", 32)?,
             title: read_required_string("BLOG_TITLE")?,
@@ -114,6 +114,17 @@ fn read_required_string(name: &'static str) -> Result<String, ConfigError> {
     }
 
     Ok(trimmed.to_string())
+}
+
+fn read_required_string_with_fallback(
+    primary: &'static str,
+    fallback: &'static str,
+) -> Result<String, ConfigError> {
+    match read_required_string(primary) {
+        Ok(value) => Ok(value),
+        Err(ConfigError::MissingVar(_)) => read_required_string(fallback),
+        Err(err) => Err(err),
+    }
 }
 
 fn read_min_length_string(name: &'static str, min_len: usize) -> Result<String, ConfigError> {

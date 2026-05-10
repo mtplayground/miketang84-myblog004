@@ -11,6 +11,8 @@ pub mod slug;
 pub mod state;
 pub mod templates;
 
+use std::path::PathBuf;
+
 use axum::middleware;
 use axum::{
     extract::{Path, Query},
@@ -82,7 +84,7 @@ pub fn app(state: AppState) -> Router {
         .route("/posts/{slug}", get(post_detail))
         .route("/tags/{tag}", get(tag_listing))
         .nest("/admin", admin_routes)
-        .nest_service("/static", ServeDir::new("static"))
+        .nest_service("/static", ServeDir::new(app_path("static")))
         .fallback(not_found)
         .layer(session_layer)
         .with_state(state)
@@ -296,7 +298,7 @@ async fn admin_home(
 }
 
 async fn about_page(State(state): State<AppState>) -> AppResult<HtmlTemplate<StaticPageTemplate>> {
-    let markdown = tokio::fs::read_to_string(ABOUT_CONTENT_PATH)
+    let markdown = tokio::fs::read_to_string(app_path(ABOUT_CONTENT_PATH))
         .await
         .map_err(|_| AppError::internal())?;
     let body_html = MarkdownRenderer::new().render(&markdown);
@@ -347,7 +349,7 @@ async fn sitemap_xml(State(state): State<AppState>) -> Result<impl IntoResponse,
         .map(|post| post.updated_at)
         .max()
         .unwrap_or_else(Utc::now);
-    let about_lastmod = tokio::fs::metadata(ABOUT_CONTENT_PATH)
+    let about_lastmod = tokio::fs::metadata(app_path(ABOUT_CONTENT_PATH))
         .await
         .ok()
         .and_then(|metadata| metadata.modified().ok())
@@ -477,6 +479,24 @@ fn summarize_text(input: &str, max_chars: usize) -> String {
     }
 
     summary
+}
+
+fn app_path(relative: &str) -> PathBuf {
+    app_root().join(relative)
+}
+
+fn app_root() -> PathBuf {
+    std::env::var_os("BLOG_APP_ROOT")
+        .map(PathBuf::from)
+        .or_else(|| {
+            std::env::current_exe().ok().and_then(|path| {
+                path.parent()
+                    .and_then(|release_dir| release_dir.parent())
+                    .and_then(|target_dir| target_dir.parent())
+                    .map(PathBuf::from)
+            })
+        })
+        .unwrap_or_else(|| PathBuf::from("."))
 }
 
 fn render_sitemap_entry(loc: &str, lastmod: DateTime<Utc>) -> String {
