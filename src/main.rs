@@ -1,19 +1,27 @@
-use std::{env, error::Error, net::SocketAddr};
+use std::error::Error;
 
 use tokio::net::TcpListener;
 use tracing::info;
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
+use myblog004::{config::Config, state::AppState};
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     init_tracing();
 
-    let bind_addr = read_bind_addr()?;
+    let config = Config::from_env()?;
+    let bind_addr = config.bind_addr;
     let listener = TcpListener::bind(bind_addr).await?;
 
-    info!(address = %bind_addr, "listening");
+    info!(
+        address = %bind_addr,
+        base_url = %config.base_url,
+        title = %config.title,
+        "listening"
+    );
 
-    axum::serve(listener, myblog004::app()).await?;
+    axum::serve(listener, myblog004::app(AppState::new(config))).await?;
 
     Ok(())
 }
@@ -26,10 +34,4 @@ fn init_tracing() {
         .with(env_filter)
         .with(fmt::layer())
         .init();
-}
-
-fn read_bind_addr() -> Result<SocketAddr, std::net::AddrParseError> {
-    let bind_addr = env::var("BLOG_BIND_ADDR").unwrap_or_else(|_| "0.0.0.0:8080".to_string());
-
-    bind_addr.parse()
 }

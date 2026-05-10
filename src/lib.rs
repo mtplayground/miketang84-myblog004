@@ -1,12 +1,18 @@
-use axum::{Router, routing::get};
+pub mod config;
+pub mod state;
+
+use axum::{Router, extract::State, routing::get};
 use tower_http::trace::TraceLayer;
 
-pub fn app() -> Router {
+use crate::state::AppState;
+
+pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/", get(healthcheck))
+        .with_state(state)
         .layer(TraceLayer::new_for_http())
 }
 
-async fn healthcheck() -> &'static str {
-    "myblog004 is running"
+async fn healthcheck(State(state): State<AppState>) -> String {
+    format!("{} is running", state.config.title)
 }
