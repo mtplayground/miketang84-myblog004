@@ -4,7 +4,7 @@ use tokio::net::TcpListener;
 use tracing::info;
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-use myblog004::{config::Config, db, state::AppState};
+use myblog004::{config::Config, db, seed::{self, AdminSeedOutcome}, state::AppState};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -14,6 +14,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let db_pool = db::connect(&config.database_url).await?;
     db::ping(&db_pool).await?;
     db::run_migrations(&db_pool).await?;
+    match seed::seed_admin(&db_pool, &config.admin_username, &config.admin_password).await? {
+        AdminSeedOutcome::Created => {
+            info!(username = %config.admin_username, "seeded initial admin");
+        }
+        AdminSeedOutcome::SkippedExisting => {
+            info!("admin seeding skipped because an admin row already exists");
+        }
+    }
     let bind_addr = config.bind_addr;
     let listener = TcpListener::bind(bind_addr).await?;
 
