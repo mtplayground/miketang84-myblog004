@@ -10,6 +10,7 @@ use url::{ParseError as UrlParseError, Url};
 #[derive(Clone)]
 pub struct Config {
     pub bind_addr: SocketAddr,
+    pub database_url: String,
     pub base_url: Url,
     pub title: String,
     pub admin_username: String,
@@ -20,6 +21,7 @@ impl Config {
     pub fn from_env() -> Result<Self, ConfigError> {
         Ok(Self {
             bind_addr: read_bind_addr()?,
+            database_url: read_required_string("BLOG_DATABASE_URL")?,
             base_url: read_required_url("BLOG_BASE_URL")?,
             title: read_required_string("BLOG_TITLE")?,
             admin_username: read_required_string("ADMIN_USERNAME")?,
