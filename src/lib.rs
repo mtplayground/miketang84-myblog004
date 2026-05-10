@@ -76,6 +76,7 @@ pub fn app(state: AppState) -> Router {
         .route("/", get(healthcheck))
         .route("/about", get(about_page))
         .route("/robots.txt", get(robots_txt))
+        .route("/sitemap.xml", get(sitemap_xml))
         .route("/posts/{slug}", get(post_detail))
         .route("/tags/{tag}", get(tag_listing))
         .nest("/admin", admin_routes)
@@ -330,6 +331,59 @@ async fn robots_txt(State(state): State<AppState>) -> Result<impl IntoResponse, 
     Ok(([(header::CONTENT_TYPE, "text/plain; charset=utf-8")], body))
 }
 
+async fn sitemap_xml(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let posts = PostRepo::new(state.db_pool.clone())
+        .list_all_admin()
+        .await
+        .map_err(|_| AppError::internal())?;
+    let published_posts = posts
+        .into_iter()
+        .filter(|post| post.status == "published")
+        .collect::<Vec<_>>();
+    let home_lastmod = published_posts
+        .iter()
+        .map(|post| post.updated_at)
+        .max()
+        .unwrap_or_else(Utc::now);
+    let about_lastmod = tokio::fs::metadata(ABOUT_CONTENT_PATH)
+        .await
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())
+        .map(DateTime::<Utc>::from)
+        .unwrap_or(home_lastmod);
+
+    let mut body = String::from(
+        r#"<?xml version="1.0" encoding="UTF-8"?>"#,
+    );
+    body.push_str(r#"<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">"#);
+    body.push_str(&render_sitemap_entry(
+        state.config.base_url.as_str(),
+        home_lastmod,
+    ));
+    body.push_str(&render_sitemap_entry(
+        state
+            .config
+            .base_url
+            .join("about")
+            .map_err(|_| AppError::internal())?
+            .as_str(),
+        about_lastmod,
+    ));
+
+    for post in published_posts {
+        let loc = state
+            .config
+            .base_url
+            .join(&format!("posts/{}", post.slug))
+            .map_err(|_| AppError::internal())?;
+        body.push_str(&render_sitemap_entry(loc.as_str(), post.updated_at));
+    }
+
+    body.push_str("</urlset>");
+
+    Ok(([(header::CONTENT_TYPE, "application/xml; charset=utf-8")], body))
+}
+
 async fn not_found() -> AppError {
     AppError::not_found()
 }
@@ -381,4 +435,29 @@ fn summarize_text(input: &str, max_chars: usize) -> String {
     }
 
     summary
+}
+
+fn render_sitemap_entry(loc: &str, lastmod: DateTime<Utc>) -> String {
+    format!(
+        "<url><loc>{}</loc><lastmod>{}</lastmod></url>",
+        escape_xml(loc),
+        escape_xml(&lastmod.to_rfc3339()),
+    )
+}
+
+fn escape_xml(input: &str) -> String {
+    let mut escaped = String::with_capacity(input.len());
+
+    for ch in input.chars() {
+        match ch {
+            '&' => escaped.push_str("&amp;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '"' => escaped.push_str("&quot;"),
+            '\'' => escaped.push_str("&apos;"),
+            _ => escaped.push(ch),
+        }
+    }
+
+    escaped
 }
