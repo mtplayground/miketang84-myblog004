@@ -7,10 +7,11 @@ pub mod seed;
 pub mod session;
 pub mod state;
 
-use axum::{Router, extract::State, routing::get};
+use axum::{Router, extract::State, routing::{get, post}};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
 use crate::{
+    auth::handlers::{login_form, login_submit, logout},
     error::{AppError, AppResult},
     session::session_layer,
     state::AppState,
@@ -21,6 +22,8 @@ pub fn app(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(healthcheck))
+        .route("/admin/login", get(login_form).post(login_submit))
+        .route("/admin/logout", post(logout))
         .nest_service("/static", ServeDir::new("static"))
         .fallback(not_found)
         .layer(session_layer)
