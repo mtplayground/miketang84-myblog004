@@ -116,6 +116,8 @@ pub struct AdminPostFormTemplate {
     pub blog_title: String,
     pub page_title: String,
     pub error_message: Option<String>,
+    pub form_action: String,
+    pub submit_label: String,
     pub title: String,
     pub slug: String,
     pub tags_csv: String,
@@ -128,6 +130,8 @@ impl AdminPostFormTemplate {
     pub fn new(
         blog_title: String,
         page_title: String,
+        form_action: String,
+        submit_label: String,
         form: crate::admin::CreatePostFormData,
         error_message: Option<String>,
     ) -> Self {
@@ -137,6 +141,8 @@ impl AdminPostFormTemplate {
             blog_title,
             page_title,
             error_message,
+            form_action,
+            submit_label,
             title: form.title,
             slug: form.slug,
             tags_csv: form.tags_csv,

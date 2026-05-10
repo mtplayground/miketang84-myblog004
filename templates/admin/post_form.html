@@ -3,14 +3,14 @@
 {% block content %}
 <section class="panel">
     <p class="eyebrow">Drafting</p>
-    <h1>Create a new post</h1>
+    <h1>{{ page_title }}</h1>
     <p>Write in Markdown, optionally override the slug, and attach tags as a comma-separated list.</p>
     {% match error_message %}
     {% when Some with (message) %}
     <p class="error">{{ message }}</p>
     {% when None %}
     {% endmatch %}
-    <form method="post" action="/admin/posts" class="stack-form">
+    <form method="post" action="{{ form_action }}" class="stack-form">
         <label for="title">Title</label>
         <input id="title" name="title" type="text" value="{{ title }}" required>
 
@@ -36,7 +36,7 @@
         </select>
 
         <div class="form-actions">
-            <button type="submit">Create post</button>
+            <button type="submit">{{ submit_label }}</button>
             <a class="dashboard-action" href="/admin">Cancel</a>
         </div>
     </form>

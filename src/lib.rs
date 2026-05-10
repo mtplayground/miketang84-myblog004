@@ -23,7 +23,7 @@ use serde::Deserialize;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
 use crate::{
-    admin::{create_post, new_post_form},
+    admin::{create_post, edit_post_form, new_post_form, update_post},
     auth::{
         guard::{AuthenticatedAdmin, require_admin_auth},
         handlers::{login_form, login_submit, logout},
@@ -56,6 +56,8 @@ pub fn app(state: AppState) -> Router {
                 .route("/", get(admin_home))
                 .route("/posts/new", get(new_post_form))
                 .route("/posts", post(create_post))
+                .route("/posts/{id}/edit", get(edit_post_form))
+                .route("/posts/{id}", post(update_post))
                 .route("/logout", post(logout))
                 .route_layer(middleware::from_fn(require_admin_auth)),
         );
@@ -240,7 +242,7 @@ async fn admin_home(
                     .published_at
                     .map(display_timestamp)
                     .unwrap_or_else(|| String::from("Not published")),
-                edit_url: format!("/admin/posts/{}/edit", post.slug),
+                edit_url: format!("/admin/posts/{}/edit", post.id),
                 toggle_url: format!(
                     "/admin/posts/{}/{}",
                     post.slug,
