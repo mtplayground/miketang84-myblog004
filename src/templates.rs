@@ -94,7 +94,20 @@ pub struct AdminLoginTemplate {
 pub struct AdminDashboardTemplate {
     pub blog_title: String,
     pub page_title: String,
-    pub admin_id: String,
+    pub posts: Vec<AdminDashboardPostTemplate>,
+}
+
+#[derive(Clone, Debug)]
+pub struct AdminDashboardPostTemplate {
+    pub title: String,
+    pub slug: String,
+    pub status_label: String,
+    pub status_class: String,
+    pub published_on: String,
+    pub edit_url: String,
+    pub toggle_url: String,
+    pub toggle_label: String,
+    pub delete_url: String,
 }
 
 pub fn render_template_response<T>(status: StatusCode, template: T) -> Response

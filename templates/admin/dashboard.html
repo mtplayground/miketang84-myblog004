@@ -3,16 +3,36 @@
 {% block content %}
 <section class="panel">
     <p class="eyebrow">Dashboard</p>
-    <h1>Authenticated admin session</h1>
-    <p>Your session is active and protected by the admin guard middleware.</p>
-    <dl class="meta-list">
-        <div>
-            <dt>Admin ID</dt>
-            <dd><code>{{ admin_id }}</code></dd>
-        </div>
-    </dl>
+    <h1>Authenticated admin dashboard</h1>
+    <p>All posts are listed here, including drafts and published entries.</p>
     <form method="post" action="/admin/logout">
         <button type="submit">Sign out</button>
     </form>
 </section>
+
+{% if posts.len() > 0 %}
+<section class="dashboard-list" aria-label="All posts">
+    {% for post in posts %}
+    <article class="dashboard-card">
+        <div class="dashboard-card__header">
+            <div>
+                <p class="eyebrow">/{{ post.slug }}</p>
+                <h2>{{ post.title }}</h2>
+            </div>
+            <span class="status-badge {{ post.status_class }}">{{ post.status_label }}</span>
+        </div>
+        <p class="dashboard-card__meta">{{ post.published_on }}</p>
+        <div class="dashboard-actions">
+            <a class="dashboard-action" href="{{ post.edit_url }}">Edit</a>
+            <a class="dashboard-action" href="{{ post.toggle_url }}">{{ post.toggle_label }}</a>
+            <a class="dashboard-action dashboard-action--danger" href="{{ post.delete_url }}">Delete</a>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<section class="panel">
+    <p>No posts have been created yet.</p>
+</section>
+{% endif %}
 {% endblock %}
