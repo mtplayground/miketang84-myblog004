@@ -1,0 +1,22 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<section class="panel">
+    <p class="eyebrow">Delete</p>
+    <h1>{{ page_title }}</h1>
+    <p>You are about to permanently delete <strong>{{ post_title }}</strong>.</p>
+    <dl class="meta-list">
+        <div>
+            <dt>Slug</dt>
+            <dd>/{{ post_slug }}</dd>
+        </div>
+    </dl>
+    <p>This removes the post and its tag links. This action cannot be undone.</p>
+    <div class="form-actions">
+        <form method="post" action="{{ form_action }}">
+            <button type="submit">Delete post</button>
+        </form>
+        <a class="dashboard-action" href="/admin">Cancel</a>
+    </div>
+</section>
+{% endblock %}

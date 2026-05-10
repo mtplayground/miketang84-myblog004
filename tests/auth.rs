@@ -158,7 +158,7 @@ async fn login_success_sets_session_and_allows_guarded_route() -> Result<(), Box
     assert!(guarded_body.contains(&format!("/admin/posts/{}/edit", published_post.id)));
     assert!(guarded_body.contains(&format!("action=\"/admin/posts/{}/unpublish\"", published_post.id)));
     assert!(guarded_body.contains(&format!("action=\"/admin/posts/{}/publish\"", draft_post.id)));
-    assert!(guarded_body.contains("/admin/posts/draft-post/delete"));
+    assert!(guarded_body.contains(&format!("/admin/posts/{}/delete", draft_post.id)));
 
     common::reset_database(&pool).await?;
     Ok(())

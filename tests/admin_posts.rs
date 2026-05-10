@@ -394,6 +394,84 @@ async fn unpublish_post_clears_status_and_timestamp() -> Result<(), Box<dyn std:
 }
 
 #[tokio::test]
+async fn delete_confirm_page_renders_post_details() -> Result<(), Box<dyn std::error::Error>> {
+    let pool = common::test_pool("delete_confirm_page_renders").await?;
+    seed_admin(&pool, "admin", "password").await?;
+    let post = seed_post(&pool, "published-note", "Published Note", "Original body", PostStatus::Published).await?;
+    let app = app(AppState::new(
+        test_config(String::from("postgresql:///test")),
+        pool.clone(),
+    ));
+    let cookie = login_cookie(app.clone(), "admin", "password").await?;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/admin/posts/{}/delete", post.id))
+                .header(header::COOKIE, cookie)
+                .body(Body::empty())
+                .expect("request builds"),
+        )
+        .await?;
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = String::from_utf8(to_bytes(response.into_body(), usize::MAX).await?.to_vec())?;
+    assert!(body.contains("Delete Post"));
+    assert!(body.contains("Published Note"));
+    assert!(body.contains("/published-note"));
+    assert!(body.contains(&format!("action=\"/admin/posts/{}/delete\"", post.id)));
+
+    common::reset_database(&pool).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn delete_post_removes_post_and_tag_links() -> Result<(), Box<dyn std::error::Error>> {
+    let pool = common::test_pool("delete_post_removes_post").await?;
+    seed_admin(&pool, "admin", "password").await?;
+    let post = seed_post(&pool, "published-note", "Published Note", "Original body", PostStatus::Published).await?;
+    let tag_repo = TagRepo::new(pool.clone());
+    let rust_tag = tag_repo
+        .upsert_by_slug(&NewTag {
+            id: Uuid::new_v4(),
+            slug: String::from("rust"),
+            name: String::from("Rust"),
+        })
+        .await?;
+    tag_repo.replace_post_tags(post.id, &[rust_tag.id]).await?;
+
+    let app = app(AppState::new(
+        test_config(String::from("postgresql:///test")),
+        pool.clone(),
+    ));
+    let cookie = login_cookie(app.clone(), "admin", "password").await?;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/admin/posts/{}/delete", post.id))
+                .header(header::COOKIE, cookie)
+                .body(Body::empty())
+                .expect("request builds"),
+        )
+        .await?;
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response.headers().get(header::LOCATION).and_then(|value| value.to_str().ok()),
+        Some("/admin")
+    );
+
+    assert!(PostRepo::new(pool.clone()).find_by_slug("published-note").await?.is_none());
+    assert!(tag_repo.list_for_post(post.id).await?.is_empty());
+
+    common::reset_database(&pool).await?;
+    Ok(())
+}
+
+#[tokio::test]
 async fn create_post_validation_rerenders_form() -> Result<(), Box<dyn std::error::Error>> {
     let pool = common::test_pool("create_post_validation").await?;
     seed_admin(&pool, "admin", "password").await?;
