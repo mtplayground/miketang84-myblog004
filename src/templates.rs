@@ -110,6 +110,43 @@ pub struct AdminDashboardPostTemplate {
     pub delete_url: String,
 }
 
+#[derive(Template)]
+#[template(path = "admin/post_form.html")]
+pub struct AdminPostFormTemplate {
+    pub blog_title: String,
+    pub page_title: String,
+    pub error_message: Option<String>,
+    pub title: String,
+    pub slug: String,
+    pub tags_csv: String,
+    pub body_md: String,
+    pub is_draft: bool,
+    pub is_published: bool,
+}
+
+impl AdminPostFormTemplate {
+    pub fn new(
+        blog_title: String,
+        page_title: String,
+        form: crate::admin::CreatePostFormData,
+        error_message: Option<String>,
+    ) -> Self {
+        let is_published = form.status == "published";
+
+        Self {
+            blog_title,
+            page_title,
+            error_message,
+            title: form.title,
+            slug: form.slug,
+            tags_csv: form.tags_csv,
+            body_md: form.body_md,
+            is_draft: !is_published,
+            is_published,
+        }
+    }
+}
+
 pub fn render_template_response<T>(status: StatusCode, template: T) -> Response
 where
     T: Template,

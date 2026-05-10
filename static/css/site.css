@@ -229,17 +229,26 @@ label {
 }
 
 input,
+textarea,
+select,
 button {
     font: inherit;
 }
 
-input {
+input,
+textarea,
+select {
     width: 100%;
     padding: 0.8rem 0.9rem;
     border-radius: 0.8rem;
     border: 1px solid var(--border);
     background: #fff;
     color: var(--ink);
+}
+
+textarea {
+    min-height: 14rem;
+    resize: vertical;
 }
 
 button {
@@ -313,6 +322,14 @@ button:hover {
     gap: 0.75rem;
     flex-wrap: wrap;
     margin-top: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
 }
 
 .dashboard-action {
