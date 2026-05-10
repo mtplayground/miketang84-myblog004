@@ -12,6 +12,7 @@ pub struct Config {
     pub bind_addr: SocketAddr,
     pub database_url: String,
     pub base_url: Url,
+    pub session_secret: String,
     pub title: String,
     pub admin_username: String,
     pub admin_password: String,
@@ -23,6 +24,7 @@ impl Config {
             bind_addr: read_bind_addr()?,
             database_url: read_required_string("BLOG_DATABASE_URL")?,
             base_url: read_required_url("BLOG_BASE_URL")?,
+            session_secret: read_min_length_string("BLOG_SESSION_SECRET", 32)?,
             title: read_required_string("BLOG_TITLE")?,
             admin_username: read_required_string("ADMIN_USERNAME")?,
             admin_password: read_required_string("ADMIN_PASSWORD")?,
@@ -34,6 +36,10 @@ impl Config {
 pub enum ConfigError {
     MissingVar(&'static str),
     EmptyVar(&'static str),
+    TooShortVar {
+        name: &'static str,
+        min_len: usize,
+    },
     InvalidBindAddr {
         value: String,
         source: AddrParseError,
@@ -50,6 +56,9 @@ impl fmt::Display for ConfigError {
         match self {
             Self::MissingVar(name) => write!(f, "missing required environment variable {name}"),
             Self::EmptyVar(name) => write!(f, "environment variable {name} cannot be empty"),
+            Self::TooShortVar { name, min_len } => {
+                write!(f, "environment variable {name} must be at least {min_len} bytes long")
+            }
             Self::InvalidBindAddr { value, source } => {
                 write!(f, "invalid BLOG_BIND_ADDR value `{value}`: {source}")
             }
@@ -69,7 +78,7 @@ impl Error for ConfigError {
         match self {
             Self::InvalidBindAddr { source, .. } => Some(source),
             Self::InvalidUrl { source, .. } => Some(source),
-            Self::MissingVar(_) | Self::EmptyVar(_) => None,
+            Self::MissingVar(_) | Self::EmptyVar(_) | Self::TooShortVar { .. } => None,
         }
     }
 }
@@ -93,6 +102,16 @@ fn read_required_string(name: &'static str) -> Result<String, ConfigError> {
     }
 
     Ok(trimmed.to_string())
+}
+
+fn read_min_length_string(name: &'static str, min_len: usize) -> Result<String, ConfigError> {
+    let value = read_required_string(name)?;
+
+    if value.len() < min_len {
+        return Err(ConfigError::TooShortVar { name, min_len });
+    }
+
+    Ok(value)
 }
 
 fn read_required_url(name: &'static str) -> Result<Url, ConfigError> {

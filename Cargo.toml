@@ -11,6 +11,7 @@ sqlx = { version = "0.8", features = ["postgres", "macros", "migrate", "runtime-
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace"] }
+tower-sessions-cookie-store = { version = "0.5", features = ["key-expansion"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 url = "2"
