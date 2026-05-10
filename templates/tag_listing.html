@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero-card">
+    <p class="eyebrow">Tagged Posts</p>
+    <h1>#{{ tag_slug }}</h1>
+    <p>Published posts filed under this tag.</p>
+</section>
+
+<section class="post-feed">
+    {% for post in posts %}
+    <article class="post-card">
+        <div class="post-card__meta">
+            <time datetime="{{ post.published_on }}">{{ post.published_on }}</time>
+            {% if post.tags.len() > 0 %}
+            <div class="tag-row" aria-label="Tags">
+                {% for tag in post.tags %}
+                <a class="tag-chip" href="/tags/{{ tag.slug }}">{{ tag.name }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <h2><a class="post-link" href="/posts/{{ post.slug }}">{{ post.title }}</a></h2>
+        <p>{{ post.excerpt }}</p>
+    </article>
+    {% endfor %}
+</section>
+{% endblock %}

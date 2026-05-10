@@ -64,6 +64,15 @@ pub struct PostDetailTemplate {
 }
 
 #[derive(Template)]
+#[template(path = "tag_listing.html")]
+pub struct TagListingTemplate {
+    pub blog_title: String,
+    pub page_title: String,
+    pub tag_slug: String,
+    pub posts: Vec<HomePostTemplate>,
+}
+
+#[derive(Template)]
 #[template(path = "admin/login.html")]
 pub struct AdminLoginTemplate {
     pub blog_title: String,

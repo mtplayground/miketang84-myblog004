@@ -31,7 +31,7 @@ use crate::{
     state::AppState,
     templates::{
         AdminDashboardTemplate, HomePostTemplate, HomeTemplate, HtmlTemplate, PostDetailTemplate,
-        TagChipTemplate,
+        TagChipTemplate, TagListingTemplate,
     },
 };
 
@@ -56,6 +56,7 @@ pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/", get(healthcheck))
         .route("/posts/{slug}", get(post_detail))
+        .route("/tags/{tag}", get(tag_listing))
         .nest("/admin", admin_routes)
         .nest_service("/static", ServeDir::new("static"))
         .fallback(not_found)
@@ -154,6 +155,51 @@ async fn post_detail(
                 slug: tag.slug,
             })
             .collect(),
+    }))
+}
+
+async fn tag_listing(
+    State(state): State<AppState>,
+    Path(tag): Path<String>,
+) -> AppResult<HtmlTemplate<TagListingTemplate>> {
+    let posts = TagRepo::new(state.db_pool.clone())
+        .posts_by_tag_slug(&tag)
+        .await
+        .map_err(|_| AppError::internal())?;
+
+    if posts.is_empty() {
+        return Err(AppError::not_found());
+    }
+
+    let tag_repo = TagRepo::new(state.db_pool.clone());
+    let mut listed_posts = Vec::with_capacity(posts.len());
+
+    for post in posts {
+        let tags = tag_repo
+            .list_for_post(post.id)
+            .await
+            .map_err(|_| AppError::internal())?;
+
+        listed_posts.push(HomePostTemplate {
+            slug: post.slug,
+            title: post.title,
+            published_on: display_timestamp(post.published_at.unwrap_or(post.created_at)),
+            excerpt: post.excerpt,
+            tags: tags
+                .into_iter()
+                .map(|tag| TagChipTemplate {
+                    name: tag.name,
+                    slug: tag.slug,
+                })
+                .collect(),
+        });
+    }
+
+    Ok(HtmlTemplate(TagListingTemplate {
+        blog_title: state.config.title.clone(),
+        page_title: format!("Tag: {tag}"),
+        tag_slug: tag,
+        posts: listed_posts,
     }))
 }
 
