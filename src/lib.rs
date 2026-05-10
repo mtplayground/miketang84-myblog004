@@ -6,6 +6,7 @@ pub mod markdown;
 pub mod repositories;
 pub mod seed;
 pub mod session;
+pub mod slug;
 pub mod state;
 pub mod templates;
 
