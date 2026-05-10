@@ -1,0 +1,95 @@
+Architecture plan for `miketang84-myblog004`
+
+Goal
+- Build a plain Rust Axum blog application with server-rendered HTML, PostgreSQL persistence, admin auth, static assets, and layered testing.
+
+Module structure
+- `src/main.rs`: process bootstrap, tracing init, config load, DB connect, session layer, router assembly, server startup.
+- `src/lib.rs`: exports app construction for tests and binary reuse.
+- `src/config.rs`: environment-backed config parsing and validation.
+- `src/error.rs`: application error type, HTTP mapping, result alias.
+- `src/state.rs`: shared `AppState` containing config, DB pool, markdown service, and template/runtime helpers.
+- `src/router.rs`: top-level route registration split into public/admin/auth sections.
+- `src/db/mod.rs`: pool creation and migration entrypoints.
+- `src/db/models.rs`: row structs and shared DB-facing enums.
+- `src/repositories/`
+  - `admins.rs`
+  - `posts.rs`
+  - `tags.rs`
+  - `mod.rs`
+- `src/auth/`
+  - `mod.rs`
+  - `password.rs`: Argon2 hashing and verification.
+  - `session.rs`: session keys, login/logout helpers, current-admin lookup.
+  - `middleware.rs`: admin guard.
+- `src/services/`
+  - `markdown.rs`: Markdown to safe HTML rendering.
+  - `slug.rs`: slug generation and validation.
+- `src/web/`
+  - `mod.rs`
+  - `public.rs`: home, post, tag, about, robots, sitemap, RSS.
+  - `admin.rs`: dashboard and CRUD handlers.
+  - `auth.rs`: login/logout handlers.
+  - `responses.rs`: shared redirect/render helpers when useful.
+- `src/views/`
+  - Askama templates grouped as `layouts/`, `public/`, `admin/`, `partials/`.
+- `migrations/`: SQLx migrations for admins, posts, tags/post_tags.
+- `static/`: CSS, JS, images, favicon, uploaded-free static assets.
+- `content/about.md`: source for about page.
+- `tests/`
+  - `public_routes.rs`
+  - `admin_routes.rs`
+  - `happy_path.rs`
+  - shared helpers in `tests/common/mod.rs`
+
+Shared types
+- `AppState`: `Config`, `PgPool`, `MarkdownService`, and any derived site metadata.
+- `Config`: bind address, database URL, session secret, site base URL, admin seed credentials, environment flags.
+- `CurrentAdmin`: authenticated admin identity stored in request extensions after guard/middleware.
+- `PostStatus`: avoid boolean sprawl by representing draft/published in domain code even if DB uses `published_at` or `is_published`.
+- `SeoMeta`: title, description, canonical URL, optional Open Graph fields for template rendering.
+
+Data model
+- `admins`: id, username, password_hash, created_at, updated_at.
+- `posts`: id, title, slug, summary, markdown_body, html_body, is_published or published_at, created_at, updated_at.
+- `tags`: id, name, slug, created_at.
+- `post_tags`: post_id, tag_id composite key.
+
+Issue dependency order
+- Foundation: 1, 2, 3, 4, 5.
+- Schema: 6, 7, 8.
+- Persistence: 9, 10, 11, 12.
+- Auth core: 13, 14, 15, 16, 17, 18.
+- Rendering/content: 19, 20, 25.
+- Public pages: 21, 22, 23, 24.
+- Admin pages: 26, 27, 28, 29, 30.
+- Discovery/SEO: 31, 32, 33, 34.
+- End-to-end verification and polish: 35, 36, 37, 38, 39.
+
+Key design decisions
+- Use an application factory in `src/lib.rs` so integration tests can construct the router without spawning the binary.
+- Keep handlers thin. Business logic belongs in repositories and services so route tests stay focused on HTTP behavior.
+- Pre-render Markdown to HTML on write paths to keep public reads simple and cheap. Recompute on create/edit only.
+- Generate and validate slugs in a dedicated service used by both admin forms and repositories to keep rules consistent.
+- Prefer explicit repository methods over generic CRUD traits. The issue list is narrow and generic abstractions would add churn without payoff.
+- Store auth state in `tower-sessions`; keep only admin ID in session, then hydrate current admin per request.
+- Centralize template context around a small base struct so SEO fields, nav state, and flash/error rendering remain consistent across public and admin pages.
+- Build XML/text endpoints (`robots.txt`, `sitemap.xml`, `rss.xml`) from repository queries and config-driven canonical URLs.
+- Use SQLx query macros or typed row mapping consistently once the schema exists, and run repository tests against an isolated test database.
+- Favor end-to-end coverage through `tests/common` helpers that seed admin credentials, create posts, and drive authenticated flows.
+
+Per-issue implementation notes
+- Issue 1 should also introduce `src/lib.rs` even if the binary is minimal, because later tests depend on it.
+- Issue 3 should define a single pool constructor reused by the server and tests.
+- Issues 6-8 should keep migrations idempotent and aligned with SQLx offline metadata strategy if adopted later.
+- Issue 14 should run seeding on startup after migrations and be safe to re-run.
+- Issue 19 should establish template inheritance early so later page issues only add focused templates.
+- Issues 27-30 should share one post form type/validation path for create and edit.
+- Issue 31 should avoid page-specific ad hoc metadata by introducing `SeoMeta` before expanding templates further.
+- Issues 35-37 should prefer black-box HTTP tests against the router with temp databases over mocking repositories.
+
+Major risks to avoid
+- Mixing DB model structs with template view models too early; keep a translation layer to avoid template-driven schema coupling.
+- Letting auth/session logic leak into handlers instead of middleware/helpers.
+- Deferring canonical URL/site metadata decisions until sitemap/RSS work; add config fields early.
+- Overusing globals or `lazy_static` where `AppState` injection is clearer and testable.
