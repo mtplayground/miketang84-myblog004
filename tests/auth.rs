@@ -84,7 +84,7 @@ async fn login_success_sets_session_and_allows_guarded_route() -> Result<(), Box
     let password = "correct horse battery staple";
     seed_admin(&pool, "admin", password).await?;
     let repo = PostRepo::new(pool.clone());
-    repo.insert(&NewPost {
+    let published_post = repo.insert(&NewPost {
         id: Uuid::new_v4(),
         slug: String::from("published-post"),
         title: String::from("Published Post"),
@@ -155,7 +155,7 @@ async fn login_success_sets_session_and_allows_guarded_route() -> Result<(), Box
     assert!(guarded_body.contains("Draft Post"));
     assert!(guarded_body.contains("Published"));
     assert!(guarded_body.contains("Draft"));
-    assert!(guarded_body.contains("/admin/posts/published-post/edit"));
+    assert!(guarded_body.contains(&format!("/admin/posts/{}/edit", published_post.id)));
     assert!(guarded_body.contains("/admin/posts/published-post/unpublish"));
     assert!(guarded_body.contains("/admin/posts/draft-post/publish"));
     assert!(guarded_body.contains("/admin/posts/draft-post/delete"));
