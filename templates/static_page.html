@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="post-detail">
+    <header class="hero-card">
+        <p class="eyebrow">Page</p>
+        <h1>{{ title }}</h1>
+    </header>
+
+    <section class="panel prose">
+        {{ body_html|safe }}
+    </section>
+</article>
+{% endblock %}

@@ -26,16 +26,18 @@ use crate::{
         handlers::{login_form, login_submit, logout},
     },
     error::{AppError, AppResult},
+    markdown::MarkdownRenderer,
     repositories::{posts::PostRepo, tags::TagRepo},
     session::session_layer,
     state::AppState,
     templates::{
         AdminDashboardTemplate, HomePostTemplate, HomeTemplate, HtmlTemplate, PostDetailTemplate,
-        TagChipTemplate, TagListingTemplate,
+        StaticPageTemplate, TagChipTemplate, TagListingTemplate,
     },
 };
 
 const HOME_PAGE_SIZE: i64 = 10;
+const ABOUT_CONTENT_PATH: &str = "content/about.md";
 
 #[derive(Debug, Deserialize)]
 struct HomePageParams {
@@ -55,6 +57,7 @@ pub fn app(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(healthcheck))
+        .route("/about", get(about_page))
         .route("/posts/{slug}", get(post_detail))
         .route("/tags/{tag}", get(tag_listing))
         .nest("/admin", admin_routes)
@@ -211,6 +214,20 @@ async fn admin_home(
         blog_title: state.config.title.clone(),
         page_title: String::from("Admin Dashboard"),
         admin_id: authenticated_admin.admin_id.to_string(),
+    }))
+}
+
+async fn about_page(State(state): State<AppState>) -> AppResult<HtmlTemplate<StaticPageTemplate>> {
+    let markdown = tokio::fs::read_to_string(ABOUT_CONTENT_PATH)
+        .await
+        .map_err(|_| AppError::internal())?;
+    let body_html = MarkdownRenderer::new().render(&markdown);
+
+    Ok(HtmlTemplate(StaticPageTemplate {
+        blog_title: state.config.title.clone(),
+        page_title: String::from("About"),
+        title: String::from("About"),
+        body_html,
     }))
 }
 
