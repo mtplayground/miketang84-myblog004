@@ -3,6 +3,7 @@ pub mod config;
 pub mod db;
 pub mod error;
 pub mod repositories;
+pub mod seed;
 pub mod state;
 
 use axum::{Router, extract::State, routing::get};
