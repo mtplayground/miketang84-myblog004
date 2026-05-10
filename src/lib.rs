@@ -25,7 +25,11 @@ use axum::{
 use chrono::{DateTime, Utc};
 use rss::{ChannelBuilder, ItemBuilder};
 use serde::Deserialize;
-use tower_http::{services::ServeDir, trace::TraceLayer};
+use tower_http::{
+    services::ServeDir,
+    trace::{DefaultOnResponse, TraceLayer},
+};
+use tracing::Level;
 
 use crate::{
     admin::{
@@ -88,7 +92,7 @@ pub fn app(state: AppState) -> Router {
         .fallback(not_found)
         .layer(session_layer)
         .with_state(state)
-        .layer(TraceLayer::new_for_http())
+        .layer(TraceLayer::new_for_http().on_response(DefaultOnResponse::new().level(Level::INFO)))
 }
 
 async fn healthcheck(
