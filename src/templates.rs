@@ -29,8 +29,24 @@ where
 pub struct HomeTemplate {
     pub blog_title: String,
     pub page_title: String,
-    pub heading: String,
-    pub message: String,
+    pub posts: Vec<HomePostTemplate>,
+    pub current_page: i64,
+    pub previous_page: Option<i64>,
+    pub next_page: Option<i64>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HomePostTemplate {
+    pub title: String,
+    pub published_on: String,
+    pub excerpt: String,
+    pub tags: Vec<HomeTagChip>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HomeTagChip {
+    pub name: String,
+    pub slug: String,
 }
 
 #[derive(Template)]

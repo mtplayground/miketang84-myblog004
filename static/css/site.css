@@ -95,6 +95,77 @@ a {
     padding: 2rem;
 }
 
+.post-feed {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+.post-card {
+    background: rgba(255, 253, 248, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 35px rgba(23, 42, 58, 0.06);
+}
+
+.post-card h2 {
+    margin: 0.35rem 0 0.75rem;
+}
+
+.post-card p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.post-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.tag-row {
+    display: flex;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+}
+
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-strong);
+    color: var(--accent-strong);
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.pager {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.pager-link {
+    text-decoration: none;
+}
+
+.pager-link:last-child {
+    justify-self: end;
+}
+
+.pager-current {
+    color: var(--muted);
+}
+
 .eyebrow {
     margin: 0 0 0.5rem;
     text-transform: uppercase;
