@@ -32,8 +32,8 @@ use crate::{
     session::session_layer,
     state::AppState,
     templates::{
-        AdminDashboardTemplate, HomePostTemplate, HomeTemplate, HtmlTemplate, PostDetailTemplate,
-        StaticPageTemplate, TagChipTemplate, TagListingTemplate,
+        AdminDashboardPostTemplate, AdminDashboardTemplate, HomePostTemplate, HomeTemplate,
+        HtmlTemplate, PostDetailTemplate, StaticPageTemplate, TagChipTemplate, TagListingTemplate,
     },
 };
 
@@ -209,12 +209,53 @@ async fn tag_listing(
 
 async fn admin_home(
     State(state): State<AppState>,
-    authenticated_admin: AuthenticatedAdmin,
+    _authenticated_admin: AuthenticatedAdmin,
 ) -> AppResult<HtmlTemplate<AdminDashboardTemplate>> {
+    let posts = PostRepo::new(state.db_pool.clone())
+        .list_all_admin()
+        .await
+        .map_err(|_| AppError::internal())?;
+    let dashboard_posts = posts
+        .into_iter()
+        .map(|post| {
+            let is_published = post.status == "published";
+            AdminDashboardPostTemplate {
+                title: post.title,
+                slug: post.slug.clone(),
+                status_label: if is_published {
+                    String::from("Published")
+                } else {
+                    String::from("Draft")
+                },
+                status_class: if is_published {
+                    String::from("status-badge--published")
+                } else {
+                    String::from("status-badge--draft")
+                },
+                published_on: post
+                    .published_at
+                    .map(display_timestamp)
+                    .unwrap_or_else(|| String::from("Not published")),
+                edit_url: format!("/admin/posts/{}/edit", post.slug),
+                toggle_url: format!(
+                    "/admin/posts/{}/{}",
+                    post.slug,
+                    if is_published { "unpublish" } else { "publish" }
+                ),
+                toggle_label: if is_published {
+                    String::from("Unpublish")
+                } else {
+                    String::from("Publish")
+                },
+                delete_url: format!("/admin/posts/{}/delete", post.slug),
+            }
+        })
+        .collect();
+
     Ok(HtmlTemplate(AdminDashboardTemplate {
         blog_title: state.config.title.clone(),
         page_title: String::from("Admin Dashboard"),
-        admin_id: authenticated_admin.admin_id.to_string(),
+        posts: dashboard_posts,
     }))
 }
 

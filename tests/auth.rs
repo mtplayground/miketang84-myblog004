@@ -11,12 +11,16 @@ use myblog004::{
     app,
     auth::password::verify_password,
     config::Config,
-    repositories::admins::AdminRepo,
+    repositories::{
+        admins::AdminRepo,
+        posts::{NewPost, PostRepo, PostStatus},
+    },
     seed::{AdminSeedOutcome, seed_admin},
     state::AppState,
 };
 use tower::ServiceExt;
 use url::Url;
+use uuid::Uuid;
 
 fn test_config(database_url: String) -> Config {
     Config {
@@ -79,6 +83,29 @@ async fn login_success_sets_session_and_allows_guarded_route() -> Result<(), Box
     let pool = common::test_pool("login_success_sets_session").await?;
     let password = "correct horse battery staple";
     seed_admin(&pool, "admin", password).await?;
+    let repo = PostRepo::new(pool.clone());
+    repo.insert(&NewPost {
+        id: Uuid::new_v4(),
+        slug: String::from("published-post"),
+        title: String::from("Published Post"),
+        body_md: String::from("published body"),
+        body_html: String::from("<p>published body</p>"),
+        excerpt: String::from("published excerpt"),
+        status: PostStatus::Published,
+        published_at: Some(chrono::Utc::now()),
+    })
+    .await?;
+    repo.insert(&NewPost {
+        id: Uuid::new_v4(),
+        slug: String::from("draft-post"),
+        title: String::from("Draft Post"),
+        body_md: String::from("draft body"),
+        body_html: String::from("<p>draft body</p>"),
+        excerpt: String::from("draft excerpt"),
+        status: PostStatus::Draft,
+        published_at: None,
+    })
+    .await?;
 
     let state = AppState::new(test_config(String::from("postgresql:///test")), pool.clone());
     let app = app(state);
@@ -123,7 +150,15 @@ async fn login_success_sets_session_and_allows_guarded_route() -> Result<(), Box
     assert_eq!(guarded_response.status(), StatusCode::OK);
     let guarded_body = to_bytes(guarded_response.into_body(), usize::MAX).await?;
     let guarded_body = String::from_utf8(guarded_body.to_vec())?;
-    assert!(guarded_body.contains("Authenticated admin"));
+    assert!(guarded_body.contains("Authenticated admin dashboard"));
+    assert!(guarded_body.contains("Published Post"));
+    assert!(guarded_body.contains("Draft Post"));
+    assert!(guarded_body.contains("Published"));
+    assert!(guarded_body.contains("Draft"));
+    assert!(guarded_body.contains("/admin/posts/published-post/edit"));
+    assert!(guarded_body.contains("/admin/posts/published-post/unpublish"));
+    assert!(guarded_body.contains("/admin/posts/draft-post/publish"));
+    assert!(guarded_body.contains("/admin/posts/draft-post/delete"));
 
     common::reset_database(&pool).await?;
     Ok(())
